@@ -1,70 +1,259 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { AccountsTable } from "@/components/AccountsTable";
+import { AddAccountDialog } from "@/components/AddAccountDialog";
+import { MetricsCards } from "@/components/MetricsCards";
+import { AccountsChart } from "@/components/AccountsChart";
+import { RedeemDialog } from "@/components/RedeemDialog";
+import { RedemptionHistory } from "@/components/RedemptionHistory";
+import { Plus, LogOut } from "lucide-react";
+
+interface Account {
+    _id: string;
+    email: string;
+    apiKey: string;
+    isActive: boolean;
+    validationData?: any;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface Metrics {
+    totalAccounts: number;
+    currentMonthAccounts: number;
+    accountsRedeemed: number;
+    unredeemedAccounts: number;
+    totalClaimableValue: number;
+    accountValueINR: number;
+    chartData: { label: string; count: number }[];
+}
 
 export default function Home() {
-    return (
-        <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-            <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-                <Image className="dark:invert" src="/next.svg" alt="Next.js logo" width={180} height={38} priority />
-                <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-                    <li className="mb-2 tracking-[-.01em]">
-                        Get started by editing{" "}
-                        <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-                            src/app/page.tsx
-                        </code>
-                        .
-                    </li>
-                    <li className="tracking-[-.01em]">Save and see your changes instantly.</li>
-                </ol>
+    const router = useRouter();
+    const { user, logout, loading: authLoading } = useAuth();
+    const [accounts, setAccounts] = useState<Account[]>([]);
+    const [metrics, setMetrics] = useState<Metrics | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [redeemDialogOpen, setRedeemDialogOpen] = useState(false);
+    const [period, setPeriod] = useState<"day" | "week" | "month">("month");
 
-                <div className="flex gap-4 items-center flex-col sm:flex-row">
-                    <a
-                        className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-                        href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-                        target="_blank"
-                        rel="noopener noreferrer"
+    useEffect(() => {
+        // Wait for auth to finish loading
+        if (authLoading) return;
+
+        if (!user) {
+            router.push("/login");
+            return;
+        }
+        fetchAccounts();
+        fetchMetrics();
+    }, [user, authLoading, router, period]);
+
+    const fetchAccounts = async () => {
+        if (!user) return;
+
+        try {
+            const response = await fetch(
+                `/api/accounts?userId=${user._id}`,
+            );
+            const data = await response.json();
+
+            if (response.ok) {
+                setAccounts(data.accounts);
+            }
+        } catch (error) {
+            console.error("Failed to fetch accounts:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchMetrics = async () => {
+        if (!user) return;
+
+        try {
+            const response = await fetch(
+                `/api/accounts/metrics?userId=${user._id}&period=${period}`,
+            );
+            const data = await response.json();
+
+            if (response.ok) {
+                setMetrics(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch metrics:", error);
+        }
+    };
+
+    const handleDeleteAccount = async (accountId: string) => {
+        if (!user) return;
+
+        try {
+            const response = await fetch(
+                `/api/accounts?accountId=${accountId}&userId=${user._id}`,
+                {
+                    method: "DELETE",
+                },
+            );
+
+            if (response.ok) {
+                setAccounts(accounts.filter((acc) => acc._id !== accountId));
+                fetchMetrics(); // Refresh metrics after deletion
+            }
+        } catch (error) {
+            console.error("Failed to delete account:", error);
+        }
+    };
+
+    const handlePeriodChange = (newPeriod: "day" | "week" | "month") => {
+        setPeriod(newPeriod);
+    };
+
+    const handleLogout = () => {
+        logout();
+        router.push("/login");
+    };
+
+    // Show loading state while checking authentication
+    if (authLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
+                <p className="text-neutral-400">Loading...</p>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null;
+    }
+
+    return (
+        <div className="min-h-screen bg-[#0a0a0a]">
+            {/* Header */}
+            <header className="bg-[#171717] border-b border-neutral-800">
+                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-neutral-100">
+                            Keymaster
+                        </h1>
+                        <p className="text-sm text-neutral-400">
+                            Welcome, {user.name}
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        onClick={handleLogout}
+                        className="gap-2"
                     >
-                        <Image className="dark:invert" src="/vercel.svg" alt="Vercel logomark" width={20} height={20} />
-                        Deploy now
-                    </a>
-                    <a
-                        className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-                        href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        Read our docs
-                    </a>
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                    </Button>
                 </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="container mx-auto px-4 py-8">
+                {/* Metrics Cards */}
+                {metrics && (
+                    <MetricsCards
+                        totalClaimableValue={metrics.totalClaimableValue}
+                        currentMonthAccounts={metrics.currentMonthAccounts}
+                        accountValueINR={metrics.accountValueINR}
+                    />
+                )}
+
+                {/* Accounts Chart */}
+                {metrics && metrics.chartData.length > 0 && (
+                    <div className="mb-6">
+                        <AccountsChart
+                            data={metrics.chartData}
+                            period={period}
+                            onPeriodChange={handlePeriodChange}
+                        />
+                    </div>
+                )}
+
+                {/* Redemption Section */}
+                {metrics && metrics.unredeemedAccounts > 0 && (
+                    <div className="mb-6">
+                        <Button
+                            onClick={() => setRedeemDialogOpen(true)}
+                            variant="default"
+                            size="lg"
+                            className="w-full sm:w-auto"
+                        >
+                            Redeem Accounts ({metrics.unredeemedAccounts} available)
+                        </Button>
+                    </div>
+                )}
+
+                {/* Redemption History */}
+                {user && (
+                    <div className="mb-6">
+                        <RedemptionHistory userId={user._id} />
+                    </div>
+                )}
+
+                {/* Accounts Table Section */}
+                <div className="mb-6 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-xl font-semibold text-neutral-100">
+                            Your Accounts
+                        </h2>
+                        <p className="text-sm text-neutral-400">
+                            Manage your connected accounts
+                        </p>
+                    </div>
+                    <Button
+                        onClick={() => setDialogOpen(true)}
+                        className="gap-2"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Add Account
+                    </Button>
+                </div>
+
+                {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                        <p className="text-neutral-400">Loading accounts...</p>
+                    </div>
+                ) : (
+                    <AccountsTable
+                        accounts={accounts}
+                        onDelete={handleDeleteAccount}
+                    />
+                )}
             </main>
-            <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-                <a
-                    className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-                    href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <Image aria-hidden src="/file.svg" alt="File icon" width={16} height={16} />
-                    Learn
-                </a>
-                <a
-                    className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-                    href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <Image aria-hidden src="/window.svg" alt="Window icon" width={16} height={16} />
-                    Examples
-                </a>
-                <a
-                    className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-                    href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <Image aria-hidden src="/globe.svg" alt="Globe icon" width={16} height={16} />
-                    Go to nextjs.org →
-                </a>
-            </footer>
+
+            {/* Add Account Dialog */}
+            <AddAccountDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                userId={user._id}
+                onAccountAdded={() => {
+                    fetchAccounts();
+                    fetchMetrics();
+                }}
+            />
+
+            {/* Redeem Dialog */}
+            {metrics && (
+                <RedeemDialog
+                    open={redeemDialogOpen}
+                    onOpenChange={setRedeemDialogOpen}
+                    userId={user._id}
+                    availableAccounts={metrics.unredeemedAccounts}
+                    onRedeemed={() => {
+                        fetchAccounts();
+                        fetchMetrics();
+                    }}
+                />
+            )}
         </div>
     );
 }
