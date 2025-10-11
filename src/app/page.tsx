@@ -122,8 +122,8 @@ export default function Home() {
     // Show loading state while checking authentication
     if (authLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
-                <p className="text-neutral-400">Loading...</p>
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <p className="text-muted-foreground">Loading...</p>
             </div>
         );
     }
@@ -133,15 +133,15 @@ export default function Home() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a]">
+        <div className="min-h-screen bg-background">
             {/* Header */}
-            <header className="bg-[#171717] border-b border-neutral-800">
+            <header className="bg-card border-b border-border">
                 <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-neutral-100">
+                        <h1 className="text-2xl font-bold text-foreground">
                             Keymaster
                         </h1>
-                        <p className="text-sm text-neutral-400">
+                        <p className="text-sm text-muted-foreground">
                             Welcome, {user.name}
                         </p>
                     </div>
@@ -202,10 +202,10 @@ export default function Home() {
                 {/* Accounts Table Section */}
                 <div className="mb-6 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-semibold text-neutral-100">
+                        <h2 className="text-xl font-semibold text-foreground">
                             Your Accounts
                         </h2>
-                        <p className="text-sm text-neutral-400">
+                        <p className="text-sm text-muted-foreground">
                             Manage your connected accounts
                         </p>
                     </div>
@@ -220,7 +220,7 @@ export default function Home() {
 
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <p className="text-neutral-400">Loading accounts...</p>
+                        <p className="text-muted-foreground">Loading accounts...</p>
                     </div>
                 ) : (
                     <AccountsTable

@@ -57,7 +57,7 @@ export function AccountsTable({ accounts, onDelete }: AccountsTableProps) {
     };
 
     return (
-        <div className="rounded-lg border border-neutral-800 bg-[#171717] shadow-lg">
+        <div className="rounded-lg border bg-card shadow-lg">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -75,7 +75,7 @@ export function AccountsTable({ accounts, onDelete }: AccountsTableProps) {
                         <TableRow>
                             <TableCell
                                 colSpan={5}
-                                className="text-center py-8 text-neutral-400"
+                                className="text-center py-8 text-muted-foreground"
                             >
                                 No accounts found. Add your first account to get
                                 started.
@@ -89,7 +89,7 @@ export function AccountsTable({ accounts, onDelete }: AccountsTableProps) {
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-2">
-                                        <code className="text-sm font-mono bg-neutral-900 px-2 py-1 rounded text-neutral-300">
+                                        <code className="text-sm font-mono bg-muted px-2 py-1 rounded text-muted-foreground">
                                             {visibleApiKeys.has(account._id)
                                                 ? account.apiKey
                                                 : maskApiKey(account.apiKey)}
@@ -132,7 +132,7 @@ export function AccountsTable({ accounts, onDelete }: AccountsTableProps) {
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <span className="text-sm text-neutral-400">
+                                    <span className="text-sm text-muted-foreground">
                                         {new Date(
                                             account.createdAt,
                                         ).toLocaleDateString()}
