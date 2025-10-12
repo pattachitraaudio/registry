@@ -13,7 +13,14 @@ export async function sendVerificationEmail(
     name: string,
     verificationToken: string,
 ) {
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`;
+    // Construct base URL: use NEXT_PUBLIC_APP_URL if set, otherwise use VERCEL_URL, fallback to localhost
+    const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        (process.env.VERCEL_URL
+            ? `https://${process.env.VERCEL_URL}`
+            : "http://localhost:3000");
+
+    const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
 
     const mailOptions = {
         from: `"Keymaster" <${process.env.SMTP_USER}>`,
