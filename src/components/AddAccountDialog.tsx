@@ -14,6 +14,7 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import { Loader2, CheckCircle } from "lucide-react";
+import { UserResponse } from "@/interfaces/APIResponses/elevenlabs/UserResponse";
 
 interface AddAccountDialogProps {
     open: boolean;
@@ -24,17 +25,16 @@ interface AddAccountDialogProps {
 
 type DialogState = "form" | "validating" | "validated";
 
-export function AddAccountDialog({
-    open,
-    onOpenChange,
-    userId,
-    onAccountAdded,
-}: AddAccountDialogProps) {
+export function AddAccountDialog({ open, onOpenChange, userId, onAccountAdded }: AddAccountDialogProps) {
     const [state, setState] = useState<DialogState>("form");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [apiKey, setApiKey] = useState("");
-    const [validationData, setValidationData] = useState<any>(null);
+    const [validationData, setValidationData] = useState<{
+        id: string;
+        characterCount: number;
+        characterLimit: number;
+    } | null>(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -44,23 +44,26 @@ export function AddAccountDialog({
         setState("validating");
 
         try {
-            const response = await fetch("/api/accounts/validate", {
-                method: "POST",
+            const res = await fetch("https://api.elevenlabs.io/v1/user", {
                 headers: {
-                    "Content-Type": "application/json",
+                    "XI-API-KEY": apiKey,
                 },
-                body: JSON.stringify({ apiKey }),
+                // body: JSON.stringify({ apiKey }),
             });
 
-            const data = await response.json();
+            const resObj = (await res.json()) as UserResponse;
 
-            if (!response.ok) {
-                setError(data.error || "API key validation failed");
+            if (res.status !== 200) {
+                setError("API key validation failed");
                 setState("form");
                 return;
             }
 
-            setValidationData(data.data);
+            setValidationData({
+                id: resObj.user_id,
+                characterCount: resObj.subscription.character_count,
+                characterLimit: resObj.subscription.character_limit,
+            });
             setState("validated");
         } catch (err) {
             setError("Failed to validate API key");
@@ -126,21 +129,15 @@ export function AddAccountDialog({
                 <DialogHeader>
                     <DialogTitle>Add New Account</DialogTitle>
                     <DialogDescription>
-                        {state === "form" &&
-                            "Enter the account credentials and API key"}
+                        {state === "form" && "Enter the account credentials and API key"}
                         {state === "validating" && "Validating API key..."}
-                        {state === "validated" &&
-                            "API key validated successfully!"}
+                        {state === "validated" && "API key validated successfully!"}
                     </DialogDescription>
                 </DialogHeader>
 
                 {state === "form" && (
                     <form onSubmit={handleValidate} className="space-y-4 py-4">
-                        {error && (
-                            <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
-                                {error}
-                            </div>
-                        )}
+                        {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
                         <div className="space-y-2">
                             <Label htmlFor="email">Account Email</Label>
                             <Input
@@ -175,11 +172,7 @@ export function AddAccountDialog({
                             />
                         </div>
                         <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleClose}
-                            >
+                            <Button type="button" variant="outline" onClick={handleClose}>
                                 Cancel
                             </Button>
                             <Button type="submit">Validate API Key</Button>
@@ -190,9 +183,7 @@ export function AddAccountDialog({
                 {state === "validating" && (
                     <div className="flex flex-col items-center justify-center py-8 space-y-4">
                         <Loader2 className="h-12 w-12 animate-spin text-neutral-500" />
-                        <p className="text-sm text-neutral-600">
-                            Validating your API key...
-                        </p>
+                        <p className="text-sm text-neutral-600">Validating your API key...</p>
                     </div>
                 )}
 
@@ -201,47 +192,31 @@ export function AddAccountDialog({
                         <div className="flex flex-col items-center justify-center space-y-4">
                             <CheckCircle className="h-12 w-12 text-green-600" />
                             <div className="rounded-md bg-green-50 p-4 w-full">
-                                <p className="font-medium text-green-800 mb-2">
-                                    API Key Validated Successfully!
-                                </p>
+                                <p className="font-medium text-green-800 mb-2">API Key Validated Successfully!</p>
                                 {validationData && (
                                     <div className="text-sm text-green-700">
-                                        <p>Status: {validationData.status}</p>
-                                        {validationData.accountType && (
-                                            <p>
-                                                Account Type:{" "}
-                                                {validationData.accountType}
-                                            </p>
+                                        <p>ID: {validationData.id}</p>
+                                        <p>
+                                            Credits: {validationData.characterCount} / {validationData.characterLimit}
+                                        </p>
+
+                                        {/*                                        {validationData.accountType && (
+                                            <p>Account Type: {validationData.accountType}</p>
                                         )}
                                         {validationData.expiresAt && (
-                                            <p>
-                                                Expires:{" "}
-                                                {new Date(
-                                                    validationData.expiresAt,
-                                                ).toLocaleDateString()}
-                                            </p>
+                                            <p>Expires: {new Date(validationData.expiresAt).toLocaleDateString()}</p>
                                         )}
+                                            */}
                                     </div>
                                 )}
                             </div>
                         </div>
-                        {error && (
-                            <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
-                                {error}
-                            </div>
-                        )}
+                        {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
                         <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleClose}
-                            >
+                            <Button type="button" variant="outline" onClick={handleClose}>
                                 Cancel
                             </Button>
-                            <Button
-                                onClick={handleAddAccount}
-                                disabled={loading}
-                            >
+                            <Button onClick={handleAddAccount} disabled={loading}>
                                 {loading ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

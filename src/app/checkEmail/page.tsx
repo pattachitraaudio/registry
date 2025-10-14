@@ -3,14 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Loader2 } from "lucide-react";
 
 export default function CheckEmailPage() {
@@ -28,7 +21,7 @@ export default function CheckEmailPage() {
         setError("");
 
         try {
-            const response = await fetch("/api/auth/resend-verification", {
+            const response = await fetch("/api/auth/resendverification", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -51,45 +44,26 @@ export default function CheckEmailPage() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-4">
-            <Card className="w-full max-w-md">
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+            <Card className="w-120">
                 <CardHeader>
                     <div className="flex justify-center mb-4">
                         <div className="rounded-full bg-neutral-100 p-3">
                             <Mail className="h-8 w-8 text-neutral-700" />
                         </div>
                     </div>
-                    <CardTitle className="text-2xl text-center">
-                        Check your email
-                    </CardTitle>
-                    <CardDescription className="text-center">
-                        We&apos;ve sent a verification link to
-                    </CardDescription>
+                    <CardTitle className="text-2xl text-center">Check your email</CardTitle>
+                    <CardDescription className="text-center">We&apos;ve sent a verification link to</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <p className="text-center font-medium text-neutral-900">
-                        {email}
-                    </p>
+                    <p className="text-center font-medium text-primary">{email}</p>
                     <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-800">
-                        <p className="font-medium mb-1">
-                            Please verify your email address
-                        </p>
-                        <p>
-                            Click the link in the email to verify your account.
-                            The link will expire in 24 hours.
-                        </p>
+                        <p className="font-medium mb-1">Please verify your email address</p>
+                        <p>Click the link in the email to verify your account. The link will expire in 24 hours.</p>
                     </div>
-                    {message && (
-                        <div className="rounded-md bg-green-50 p-3 text-sm text-green-800">
-                            {message}
-                        </div>
-                    )}
-                    {error && (
-                        <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
-                            {error}
-                        </div>
-                    )}
-                    <div className="text-center text-sm text-neutral-600">
+                    {message && <div className="rounded-md bg-green-50 p-3 text-sm text-green-800">{message}</div>}
+                    {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
+                    <div className="text-center text-sm text-muted-foreground">
                         <p>Didn&apos;t receive the email?</p>
                         <p>Check your spam folder or request a new one.</p>
                     </div>
@@ -99,7 +73,7 @@ export default function CheckEmailPage() {
                         onClick={handleResend}
                         disabled={loading}
                         variant="outline"
-                        className="w-full"
+                        className="w-full bg-primary text-primary-foreground"
                     >
                         {loading ? (
                             <>

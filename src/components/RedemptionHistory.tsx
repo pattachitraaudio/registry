@@ -2,14 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/config/constants";
 
 interface Redemption {
@@ -33,12 +26,14 @@ export function RedemptionHistory({ userId }: RedemptionHistoryProps) {
 
     const fetchRedemptions = async () => {
         try {
+            /*
             const response = await fetch(`/api/redemptions?userId=${userId}`);
             const data = await response.json();
 
             if (response.ok) {
                 setRedemptions(data.redemptions);
             }
+                */
         } catch (error) {
             console.error("Failed to fetch redemptions:", error);
         } finally {
@@ -50,9 +45,7 @@ export function RedemptionHistory({ userId }: RedemptionHistoryProps) {
         <Card>
             <CardHeader>
                 <CardTitle>Redemption History</CardTitle>
-                <p className="text-sm text-neutral-500">
-                    Track your account redemptions
-                </p>
+                <p className="text-sm text-neutral-500">Track your account redemptions</p>
             </CardHeader>
             <CardContent>
                 {loading ? (
@@ -69,12 +62,8 @@ export function RedemptionHistory({ userId }: RedemptionHistoryProps) {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Date & Time</TableHead>
-                                    <TableHead className="text-right">
-                                        Accounts
-                                    </TableHead>
-                                    <TableHead className="text-right">
-                                        Total Value
-                                    </TableHead>
+                                    <TableHead className="text-right">Accounts</TableHead>
+                                    <TableHead className="text-right">Total Value</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -83,40 +72,26 @@ export function RedemptionHistory({ userId }: RedemptionHistoryProps) {
                                         <TableCell>
                                             <div>
                                                 <p className="text-sm font-medium">
-                                                    {new Date(
-                                                        redemption.redeemedAt,
-                                                    ).toLocaleDateString(
-                                                        "en-US",
-                                                        {
-                                                            year: "numeric",
-                                                            month: "short",
-                                                            day: "numeric",
-                                                        },
-                                                    )}
+                                                    {new Date(redemption.redeemedAt).toLocaleDateString("en-US", {
+                                                        year: "numeric",
+                                                        month: "short",
+                                                        day: "numeric",
+                                                    })}
                                                 </p>
                                                 <p className="text-xs text-neutral-500">
-                                                    {new Date(
-                                                        redemption.redeemedAt,
-                                                    ).toLocaleTimeString(
-                                                        "en-US",
-                                                        {
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                        },
-                                                    )}
+                                                    {new Date(redemption.redeemedAt).toLocaleTimeString("en-US", {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })}
                                                 </p>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <span className="font-medium">
-                                                {redemption.accountsRedeemed}
-                                            </span>
+                                            <span className="font-medium">{redemption.accountsRedeemed}</span>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <span className="font-semibold text-green-600">
-                                                {formatCurrency(
-                                                    redemption.totalValue,
-                                                )}
+                                                {formatCurrency(redemption.totalValue)}
                                             </span>
                                         </TableCell>
                                     </TableRow>

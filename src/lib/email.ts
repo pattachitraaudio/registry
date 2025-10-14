@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { Globals } from "@/config/globals";
 
 const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -8,24 +9,13 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-export async function sendVerificationEmail(
-    email: string,
-    name: string,
-    verificationToken: string,
-) {
-    // Construct base URL: use NEXT_PUBLIC_APP_URL if set, otherwise use VERCEL_URL, fallback to localhost
-    const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL ||
-        (process.env.VERCEL_URL
-            ? `https://${process.env.VERCEL_URL}`
-            : "http://localhost:3000");
-
-    const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
+export async function sendVerificationEmail(email: string, name: string, token: string, expirySeconds: number) {
+    const verificationUrl = `${Globals.baseUrl}/verifyEmail?token=${token}`;
 
     const mailOptions = {
-        from: `"Keymaster" <${process.env.SMTP_USER}>`,
+        from: `"${Globals.app.name}" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: "Verify Your Email - Keymaster",
+        subject: `Verify Your Email - ${Globals.app.name}`,
         html: `
             <!DOCTYPE html>
             <html>
@@ -73,22 +63,22 @@ export async function sendVerificationEmail(
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>Welcome to Keymaster!</h1>
+                        <h1>Welcome to ${Globals.app.name}!</h1>
                     </div>
                     <div class="content">
                         <p>Hi ${name},</p>
                         <p>Thank you for signing up! Please verify your email address to complete your registration.</p>
                         <p>Click the button below to verify your email:</p>
                         <center>
-                            <a href="${verificationUrl}" class="button">Verify Email</a>
+                            <a href="${verificationUrl}" class="button">Verify email</a>
                         </center>
                         <p>Or copy and paste this link into your browser:</p>
                         <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
-                        <p><strong>This link will expire in 24 hours.</strong></p>
-                        <p>If you didn't create an account with Keymaster, please ignore this email.</p>
+                        <p><strong>This link will expire in ${expirySeconds} seconds.</strong></p>
+                        <p>If you didn't create an account \`${Globals.app.name}\`, please ignore this email.</p>
                     </div>
                     <div class="footer">
-                        <p>&copy; ${new Date().getFullYear()} Keymaster. All rights reserved.</p>
+                        <p>&copy; ${new Date().getFullYear()} ${Globals.app.name}. All rights reserved.</p>
                     </div>
                 </div>
             </body>
@@ -98,9 +88,9 @@ export async function sendVerificationEmail(
 
     try {
         await transporter.sendMail(mailOptions);
-        return { success: true };
+        return true;
     } catch (error) {
-        console.error("Error sending email:", error);
-        return { success: false, error };
+        console.error(`Error sending email to \"${email}\":`, error);
+        return false;
     }
 }

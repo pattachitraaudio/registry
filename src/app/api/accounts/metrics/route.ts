@@ -1,8 +1,9 @@
+/*
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
-import { Account } from "@/models/Account";
-import { User } from "@/models/User";
+// import clientPromise from "@/lib/mongoDB";
+import { MAccount } from "@/models/MAccount";
+import { MUser } from "@/models/MUser";
 import { ACCOUNT_VALUE_INR } from "@/config/constants";
 
 export async function GET(request: Request) {
@@ -12,16 +13,13 @@ export async function GET(request: Request) {
         const period = searchParams.get("period") || "month"; // day, week, month
 
         if (!userId) {
-            return NextResponse.json(
-                { error: "User ID is required" },
-                { status: 400 },
-            );
+            return NextResponse.json({ error: "User ID is required" }, { status: 400 });
         }
 
         const client = await clientPromise;
         const db = client.db();
-        const accountsCollection = db.collection<Account>("accounts");
-        const usersCollection = db.collection<User>("users");
+        const accountsCollection = db.collection<MAccount>("accounts");
+        const usersCollection = db.collection<MUser>("users");
 
         // Get user to fetch accountsRedeemed
         const user = await usersCollection.findOne({
@@ -29,16 +27,11 @@ export async function GET(request: Request) {
         });
 
         if (!user) {
-            return NextResponse.json(
-                { error: "User not found" },
-                { status: 404 },
-            );
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
         // Get all accounts for the user
-        const accounts = await accountsCollection
-            .find({ userId: new ObjectId(userId) })
-            .toArray();
+        const accounts = await accountsCollection.find({ userId: new ObjectId(userId) }).toArray();
 
         const totalAccounts = accounts.length;
         const accountsRedeemed = user.accountsRedeemed || 0;
@@ -47,9 +40,7 @@ export async function GET(request: Request) {
         // Calculate current month's accounts
         const now = new Date();
         const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const currentMonthAccounts = accounts.filter(
-            (account) => new Date(account.createdAt) >= currentMonthStart,
-        );
+        const currentMonthAccounts = accounts.filter((account) => new Date(account.createdAt) >= currentMonthStart);
 
         // Calculate total claimable value
         const totalClaimableValue = unredeemedAccounts * ACCOUNT_VALUE_INR;
@@ -71,17 +62,11 @@ export async function GET(request: Request) {
         );
     } catch (error) {
         console.error("Get metrics error:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 },
-        );
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
 
-function getChartData(
-    accounts: Account[],
-    period: string,
-): { label: string; count: number }[] {
+function getChartData(accounts: Account[], period: string): { label: string; count: number }[] {
     const data: { [key: string]: number } = {};
 
     accounts.forEach((account) => {
@@ -106,7 +91,7 @@ function getChartData(
     });
 
     // Convert to array and sort by date
-    let sortedData = Object.entries(data)
+    const sortedData = Object.entries(data)
         .map(([label, count]) => ({
             label,
             count,
@@ -119,14 +104,18 @@ function getChartData(
 }
 
 function getWeekNumber(date: Date): number {
-    const d = new Date(
-        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-    );
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const weekNo = Math.ceil(
-        ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
-    );
+    const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
     return weekNo;
+}
+*/
+
+import { APIResponseCode } from "@/app/enums/APIResponseCode";
+import { NextResponse } from "next/server";
+
+export async function POST(request: Request) {
+    return NextResponse.json({ status: APIResponseCode.WORK_IN_PROGRESS, message: "Work in progress" });
 }

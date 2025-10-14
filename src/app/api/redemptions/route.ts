@@ -1,7 +1,8 @@
+/*
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
-import { User } from "@/models/User";
+import { MUser } from "@/models/MUser";
 import { Redemption } from "@/models/Redemption";
 import { ACCOUNT_VALUE_INR } from "@/config/constants";
 
@@ -129,4 +130,13 @@ export async function GET(request: Request) {
             { status: 500 },
         );
     }
+}
+
+*/
+
+import { APIResponseCode } from "@/app/enums/APIResponseCode";
+import { NextResponse } from "next/server";
+
+export async function POST(request: Request) {
+    return NextResponse.json({ status: APIResponseCode.WORK_IN_PROGRESS, message: "Work in progress" });
 }

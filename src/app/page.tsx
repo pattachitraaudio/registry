@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,16 +11,21 @@ import { AccountsChart } from "@/components/AccountsChart";
 import { RedeemDialog } from "@/components/RedeemDialog";
 import { RedemptionHistory } from "@/components/RedemptionHistory";
 import { Plus, LogOut } from "lucide-react";
+import { IAccount } from "@/interfaces/IAccount";
+import { IUser } from "@/interfaces/IUser";
+import { AccountsResponse } from "@/interfaces/APIResponses/AccountsResponse";
 
+/*
 interface Account {
     _id: string;
     email: string;
     apiKey: string;
     isActive: boolean;
-    validationData?: any;
+    // validationData?: any;
     createdAt: string;
     updatedAt: string;
 }
+    */
 
 interface Metrics {
     totalAccounts: number;
@@ -33,38 +38,31 @@ interface Metrics {
 }
 
 export default function Home() {
+    console.log("[[Home]]");
     const router = useRouter();
-    const { user, logout, loading: authLoading } = useAuth();
-    const [accounts, setAccounts] = useState<Account[]>([]);
+    const { user, logout, authLoading } = useAuth();
+    const [accounts, setAccounts] = useState<IAccount[]>([]);
     const [metrics, setMetrics] = useState<Metrics | null>(null);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [redeemDialogOpen, setRedeemDialogOpen] = useState(false);
     const [period, setPeriod] = useState<"day" | "week" | "month">("month");
 
-    useEffect(() => {
-        // Wait for auth to finish loading
-        if (authLoading) return;
-
-        if (!user) {
-            router.push("/login");
-            return;
-        }
-        fetchAccounts();
-        fetchMetrics();
-    }, [user, authLoading, router, period]);
+    /*
+    const user: IUser = { email: "a@b", name: "U", id: "1" };
+    const logout = () => {};
+    const authLoading = true;
+    */
 
     const fetchAccounts = async () => {
         if (!user) return;
 
         try {
-            const response = await fetch(
-                `/api/accounts?userId=${user._id}`,
-            );
-            const data = await response.json();
+            const res = await fetch(`/api/accounts`);
+            const resObj = (await res.json()) as AccountsResponse;
 
-            if (response.ok) {
-                setAccounts(data.accounts);
+            if (res.status === 200) {
+                setAccounts(resObj.data.accounts);
             }
         } catch (error) {
             console.error("Failed to fetch accounts:", error);
@@ -77,14 +75,14 @@ export default function Home() {
         if (!user) return;
 
         try {
-            const response = await fetch(
-                `/api/accounts/metrics?userId=${user._id}&period=${period}`,
-            );
+            /*
+            const response = await fetch(`/api/accounts/metrics`);
             const data = await response.json();
 
             if (response.ok) {
                 setMetrics(data);
             }
+                */
         } catch (error) {
             console.error("Failed to fetch metrics:", error);
         }
@@ -94,15 +92,12 @@ export default function Home() {
         if (!user) return;
 
         try {
-            const response = await fetch(
-                `/api/accounts?accountId=${accountId}&userId=${user._id}`,
-                {
-                    method: "DELETE",
-                },
-            );
+            const response = await fetch(`/api/accounts?id=${accountId}`, {
+                method: "DELETE",
+            });
 
             if (response.ok) {
-                setAccounts(accounts.filter((acc) => acc._id !== accountId));
+                // setAccounts(accounts.filter((acc) => acc._id !== accountId));
                 fetchMetrics(); // Refresh metrics after deletion
             }
         } catch (error) {
@@ -116,8 +111,19 @@ export default function Home() {
 
     const handleLogout = () => {
         logout();
-        router.push("/login");
     };
+
+    useEffect(() => {
+        // Wait for auth to finish loading
+        if (authLoading) return;
+
+        if (!user) {
+            router.push("/login");
+            return;
+        }
+        fetchAccounts();
+        fetchMetrics();
+    }, [user, authLoading]);
 
     // Show loading state while checking authentication
     if (authLoading) {
@@ -138,18 +144,10 @@ export default function Home() {
             <header className="bg-card border-b border-border">
                 <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">
-                            Keymaster
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                            Welcome, {user.name}
-                        </p>
+                        <h1 className="text-2xl font-bold text-foreground">Keymaster</h1>
+                        <p className="text-sm text-muted-foreground">Welcome, {user.name}</p>
                     </div>
-                    <Button
-                        variant="outline"
-                        onClick={handleLogout}
-                        className="gap-2"
-                    >
+                    <Button variant="outline" onClick={handleLogout} className="gap-2">
                         <LogOut className="h-4 w-4" />
                         Logout
                     </Button>
@@ -170,11 +168,7 @@ export default function Home() {
                 {/* Accounts Chart */}
                 {metrics && metrics.chartData.length > 0 && (
                     <div className="mb-6">
-                        <AccountsChart
-                            data={metrics.chartData}
-                            period={period}
-                            onPeriodChange={handlePeriodChange}
-                        />
+                        <AccountsChart data={metrics.chartData} period={period} onPeriodChange={handlePeriodChange} />
                     </div>
                 )}
 
@@ -195,24 +189,17 @@ export default function Home() {
                 {/* Redemption History */}
                 {user && (
                     <div className="mb-6">
-                        <RedemptionHistory userId={user._id} />
+                        <RedemptionHistory userId={user.id} />
                     </div>
                 )}
 
                 {/* Accounts Table Section */}
                 <div className="mb-6 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-semibold text-foreground">
-                            Your Accounts
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                            Manage your connected accounts
-                        </p>
+                        <h2 className="text-xl font-semibold text-foreground">Your Accounts</h2>
+                        <p className="text-sm text-muted-foreground">Manage your connected accounts</p>
                     </div>
-                    <Button
-                        onClick={() => setDialogOpen(true)}
-                        className="gap-2"
-                    >
+                    <Button onClick={() => setDialogOpen(true)} className="gap-2">
                         <Plus className="h-4 w-4" />
                         Add Account
                     </Button>
@@ -223,10 +210,7 @@ export default function Home() {
                         <p className="text-muted-foreground">Loading accounts...</p>
                     </div>
                 ) : (
-                    <AccountsTable
-                        accounts={accounts}
-                        onDelete={handleDeleteAccount}
-                    />
+                    <AccountsTable accounts={accounts} onDelete={handleDeleteAccount} />
                 )}
             </main>
 
@@ -234,7 +218,7 @@ export default function Home() {
             <AddAccountDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
-                userId={user._id}
+                userId={user.id}
                 onAccountAdded={() => {
                     fetchAccounts();
                     fetchMetrics();
@@ -246,7 +230,7 @@ export default function Home() {
                 <RedeemDialog
                     open={redeemDialogOpen}
                     onOpenChange={setRedeemDialogOpen}
-                    userId={user._id}
+                    userId={user.id}
                     availableAccounts={metrics.unredeemedAccounts}
                     onRedeemed={() => {
                         fetchAccounts();

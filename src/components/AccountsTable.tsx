@@ -2,35 +2,18 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, EyeOff, Trash2, CheckCircle, XCircle } from "lucide-react";
 
-interface Account {
-    _id: string;
-    email: string;
-    apiKey: string;
-    isActive: boolean;
-    validationData?: any;
-    createdAt: string;
-    updatedAt: string;
-}
+import type { IAccount } from "@/interfaces/IAccount";
 
 interface AccountsTableProps {
-    accounts: Account[];
+    accounts: IAccount[];
     onDelete: (accountId: string) => void;
 }
 
 export function AccountsTable({ accounts, onDelete }: AccountsTableProps) {
-    const [visibleApiKeys, setVisibleApiKeys] = useState<Set<string>>(
-        new Set(),
-    );
+    const [visibleApiKeys, setVisibleApiKeys] = useState<Set<string>>(new Set());
 
     const toggleApiKeyVisibility = (accountId: string) => {
         setVisibleApiKeys((prev) => {
@@ -63,34 +46,24 @@ export function AccountsTable({ accounts, onDelete }: AccountsTableProps) {
                     <TableRow>
                         <TableHead className="w-[220px]">Email</TableHead>
                         <TableHead className="w-[280px]">API Key</TableHead>
-                        <TableHead className="w-[100px]">Status</TableHead>
-                        <TableHead className="w-[130px]">Added Date</TableHead>
-                        <TableHead className="w-[120px] text-right">
-                            Actions
-                        </TableHead>
+                        <TableHead className="w-[120px] text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {accounts.length === 0 ? (
                         <TableRow>
-                            <TableCell
-                                colSpan={5}
-                                className="text-center py-8 text-muted-foreground"
-                            >
-                                No accounts found. Add your first account to get
-                                started.
+                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                No accounts found. Add your first account to get started.
                             </TableCell>
                         </TableRow>
                     ) : (
                         accounts.map((account) => (
-                            <TableRow key={account._id}>
-                                <TableCell className="font-medium">
-                                    {account.email}
-                                </TableCell>
+                            <TableRow key={account.id}>
+                                <TableCell className="font-medium">{account.email}</TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-2">
                                         <code className="text-sm font-mono bg-muted px-2 py-1 rounded text-muted-foreground">
-                                            {visibleApiKeys.has(account._id)
+                                            {visibleApiKeys.has(account.id)
                                                 ? account.apiKey
                                                 : maskApiKey(account.apiKey)}
                                         </code>
@@ -98,13 +71,9 @@ export function AccountsTable({ accounts, onDelete }: AccountsTableProps) {
                                             variant="ghost"
                                             size="icon"
                                             className="h-7 w-7"
-                                            onClick={() =>
-                                                toggleApiKeyVisibility(
-                                                    account._id,
-                                                )
-                                            }
+                                            onClick={() => toggleApiKeyVisibility(account.id)}
                                         >
-                                            {visibleApiKeys.has(account._id) ? (
+                                            {visibleApiKeys.has(account.id) ? (
                                                 <EyeOff className="h-4 w-4" />
                                             ) : (
                                                 <Eye className="h-4 w-4" />
@@ -112,6 +81,28 @@ export function AccountsTable({ accounts, onDelete }: AccountsTableProps) {
                                         </Button>
                                     </div>
                                 </TableCell>
+                                <TableCell className="text-right">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(account.id)}
+                                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    )}
+                </TableBody>
+            </Table>
+        </div>
+    );
+}
+/*
+
+                        <TableHead className="w-[100px]">Status</TableHead>
+                        <TableHead className="w-[130px]">Added Date</TableHead>
                                 <TableCell>
                                     <div className="flex items-center gap-2">
                                         {account.isActive ? (
@@ -138,21 +129,4 @@ export function AccountsTable({ accounts, onDelete }: AccountsTableProps) {
                                         ).toLocaleDateString()}
                                     </span>
                                 </TableCell>
-                                <TableCell className="text-right">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDelete(account._id)}
-                                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
-        </div>
-    );
-}
+                                */

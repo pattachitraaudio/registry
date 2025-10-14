@@ -6,23 +6,18 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+// import { LoginResponse } from "@/interfaces/APIResponses/LoginResponse";
 
 export default function LoginPage() {
+    console.log("[[LoginPage]]");
     const router = useRouter();
-    const { user, setUser, loading: authLoading } = useAuth();
+    const { user, login, authLoading, authError } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+    // const [error, setError] = useState("");
+    // const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         // Redirect if already logged in
@@ -31,11 +26,14 @@ export default function LoginPage() {
         }
     }, [user, authLoading, router]);
 
+    /*
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
         setLoading(true);
 
+        */
+    /*
         try {
             const response = await fetch("/api/auth/login", {
                 method: "POST",
@@ -45,44 +43,56 @@ export default function LoginPage() {
                 body: JSON.stringify({ email, password }),
             });
 
-            const data = await response.json();
+            const resObj = (await response.json()) as ErrorResponse | 
 
-            if (!response.ok) {
-                // If email needs verification, redirect to check-email page
+            if (resObj.status === APIResponseCode.GENERIC_ERROR) {
+                // If email needs verification, redirect to checkEmail page
+                /*
                 if (data.needsVerification) {
-                    router.push(
-                        `/check-email?email=${encodeURIComponent(data.email)}`,
-                    );
+                    router.push(`/checkEmail?email=${encodeURIComponent(data.email)}`);
                     return;
                 }
-                setError(data.error || "Login failed");
+                setError(resObj.message || "Login failed");
                 return;
             }
 
             // Set user in context
-            setUser(data.user);
+            // setUser((resObj as LoginResponse).data);
             router.push("/");
-        } catch (err) {
+        } catch {
             setError("An error occurred. Please try again.");
         } finally {
             setLoading(false);
         }
-    };
+        */
+    // };
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-background p-4">
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle className="text-2xl">Login</CardTitle>
-                    <CardDescription>
-                        Enter your credentials to access your account
-                    </CardDescription>
+                    <CardDescription>Enter your credentials to access your account</CardDescription>
                 </CardHeader>
-                <form onSubmit={handleSubmit}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+
+                        (async function () {
+                            try {
+                                await login(email, password);
+                                console.log("pushing /");
+                                router.push("/");
+                            } catch {
+                                // Do nothing
+                            }
+                        })();
+                    }}
+                >
                     <CardContent className="space-y-4">
-                        {error && (
+                        {authError && (
                             <div className="rounded-md bg-destructive/10 border border-destructive/50 p-3 text-sm text-destructive">
-                                {error}
+                                {authError}
                             </div>
                         )}
                         <div className="space-y-2">
@@ -109,19 +119,12 @@ export default function LoginPage() {
                         </div>
                     </CardContent>
                     <CardFooter className="flex flex-col space-y-4">
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={loading}
-                        >
-                            {loading ? "Logging in..." : "Login"}
+                        <Button type="submit" className="w-full" disabled={authLoading}>
+                            {authLoading ? "Logging in..." : "Login"}
                         </Button>
                         <p className="text-center text-sm text-muted-foreground">
                             Don&apos;t have an account?{" "}
-                            <Link
-                                href="/signup"
-                                className="font-medium text-primary hover:underline"
-                            >
+                            <Link href="/signUp" className="font-medium text-primary hover:underline">
                                 Sign up
                             </Link>
                         </p>

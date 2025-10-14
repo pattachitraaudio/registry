@@ -1,26 +1,20 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { SessionPayload } from "@/interfaces/SessionPayload";
 
-const secret = new TextEncoder().encode(
-    process.env.JWT_SECRET || "fallback-secret-key",
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "Pattachitra@keymaster299");
 
-export interface SessionPayload {
-    userId: string;
-    email: string;
-    name: string;
-}
+const COOKIE_NAME = "jwt";
 
-const COOKIE_NAME = "session";
 const COOKIE_OPTIONS = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "prod",
     sameSite: "lax" as const,
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",
 };
 
-export async function createSession(payload: SessionPayload) {
+export async function createSession(payload: SessionPayload): Promise<string> {
     const token = await new SignJWT(payload)
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
@@ -30,32 +24,26 @@ export async function createSession(payload: SessionPayload) {
     return token;
 }
 
-export async function verifySession(token: string) {
-    try {
-        const verified = await jwtVerify(token, secret);
-        return verified.payload as SessionPayload;
-    } catch (error) {
-        return null;
-    }
+export async function verifySession(token: string): Promise<SessionPayload> {
+    return (await jwtVerify<SessionPayload>(token, secret)).payload;
 }
 
-export async function setSessionCookie(token: string) {
-    const cookieStore = await cookies();
-    cookieStore.set(COOKIE_NAME, token, COOKIE_OPTIONS);
+export async function setSessionCookie(token: string): Promise<void> {
+    (await cookies()).set(COOKIE_NAME, token, COOKIE_OPTIONS);
 }
 
-export async function getSessionCookie() {
-    const cookieStore = await cookies();
-    return cookieStore.get(COOKIE_NAME)?.value;
+export async function getSessionCookie(): Promise<string | undefined> {
+    return (await cookies()).get(COOKIE_NAME)?.value;
 }
 
-export async function deleteSessionCookie() {
-    const cookieStore = await cookies();
-    cookieStore.delete(COOKIE_NAME);
+export async function deleteSessionCookie(): Promise<void> {
+    (await cookies()).delete(COOKIE_NAME);
 }
 
 export async function getSession() {
-    const token = await getSessionCookie();
-    if (!token) return null;
-    return await verifySession(token);
+    const payload = await getSessionCookie();
+    if (!payload) {
+        throw new Error();
+    }
+    return await verifySession(payload);
 }
