@@ -1,150 +1,334 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { MUser } from "@/models/MUser";
-import { Globals } from "@/config/globals";
+import { MUser } from "@/models/mUser";
 import { sendVerificationEmail } from "@/lib/email";
-import zod from "zod";
-import { ErrorResponse } from "@/interfaces/APIResponses/ErrorResponse";
-import { APIResponseCode } from "@/app/enums/APIResponseCode";
-import { UserResponse } from "@/interfaces/APIResponses/UserResponse";
+import { APIResponseCode } from "@/enums/APIResponseCode";
 import { ObjectId } from "mongodb";
-import { GenericErrorResponse } from "@/interfaces/APIResponses/GenericErrorResponse";
+import { APIErrorResponse } from "@/classes/apiResponses/APIResponse";
 
-const SignUpUser = zod.object({
-    name: zod
-        .string()
-        .min(2, "Name must be at least 2 characters")
-        .max(50, "Name must not exceed 50 characters")
-        .trim(),
+import {
+    APISignUpErrorResponse,
+    APISignUpSuccessResponse,
+    APISignUpFormEmailErrorResponse,
+    APISignUpFormNameErrorResponse,
+    APISignUpFormPasswordErrorResponse,
+    APISignUpFormReferralCodeErrorResponse,
+} from "@/classes/apiResponses/signUp";
 
-    email: zod
-        .email("Invalid email address")
-        .toLowerCase()
-        .trim()
-        .regex(
-            /^[a-z0-9]+@/,
-            "Email username must contain only letters and numbers (no dots, underscores, or special characters)",
-        )
-        .regex(
-            /@[a-z0-9]+\./,
-            "Email domain must contain only letters and numbers (no underscores or special characters)",
-        )
-        .regex(/^[^.]*@[^.]*\.[^.]*$/, "Email must not contain subdomains (format: username@domain.tld)")
-        .regex(/@[a-z0-9]+\.[a-z]{2,}$/, "Email must end with a valid TLD (e.g., .com, .org)"),
+import { ServiceManager } from "@/classes/xServiceManager";
 
-    password: zod
-        .string()
-        .refine(
-            (password): boolean =>
-                password.length >= 8 &&
-                password.length <= 64 &&
-                /[A-Z]/.test(password) &&
-                /[a-z]/.test(password) &&
-                /[0-9]/.test(password) &&
-                /[^A-Za-z0-9]/.test(password),
-            {
-                message:
-                    "Password must be 8 to 64 characters in length and must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-            },
-        ),
-    /*
-        .min(8, "Password must be at least 8 characters")
-        .max(64, "Password must not exceed 64 characters")
-        .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-        .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-        .regex(/[0-9]/, "Password must contain at least one number")
-        .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
-        */
-});
+function validateCaptcha(bodyObj: object): { captchaRes: string } {
+    const Code = APIResponseCode.Error.SignUp.Captcha;
 
-export async function POST(request: Request): Promise<NextResponse<GenericErrorResponse> | NextResponse<UserResponse>> {
+    if (!("captchaRes" in bodyObj)) {
+        throw new APISignUpErrorResponse(400, {
+            code: Code.CAPTCHA_NOT_PRESENT,
+            message: "Captcha response not present",
+        });
+    }
+
+    if (typeof bodyObj["captchaRes"] !== "string") {
+        throw new APISignUpErrorResponse(400, {
+            code: Code.CAPTCHA_NOT_A_STRING,
+            message: "Captcha res must be a string",
+        });
+    }
+
+    return { captchaRes: bodyObj["captchaRes"] };
+}
+
+function validateEmail(bodyObj: object): { email: string } {
+    const Code = APIResponseCode.Error.SignUp.Form.Email;
+
+    if (!("email" in bodyObj)) {
+        throw new APISignUpFormEmailErrorResponse({
+            code: Code.EMAIL_NOT_PRESENT,
+            message: "Email not present",
+        });
+    }
+
+    const email = bodyObj.email;
+
+    if (typeof email !== "string") {
+        throw new APISignUpFormEmailErrorResponse({ code: Code.EMAIL_NOT_A_STRING, message: "Email must be a string" });
+    }
+
+    if (!email.match(/^[a-z0-9]+@/)) {
+        throw new APISignUpFormEmailErrorResponse({
+            code: Code.INVALID_USERNAME,
+            message:
+                "Email username must contain only letters and numbers (no dots, underscores, or special characters)",
+        });
+    }
+
+    if (!email.match(/@[a-z0-9]+\./)) {
+        throw new APISignUpFormEmailErrorResponse({
+            code: Code.INVALID_DOMAIN_NAME,
+            message: "Email domain must contain only letters and numbers (no underscores or special characters)",
+        });
+    }
+
+    if (!email.match(/^[^.]*@[^.]*\.[^.]*$/)) {
+        throw new APISignUpFormEmailErrorResponse({
+            code: Code.INVALID_DOMAIN_NAME,
+            message: "Email must not contain subdomains (format: username@domain.tld)",
+        });
+    }
+
+    if (!email.match(/^[a-z0-9]+@[a-z0-9]+\.[a-z]{2,}$/)) {
+        throw new APISignUpFormEmailErrorResponse({
+            code: Code.FAILED_TO_VALIDATE_EMAIL,
+            message: "Invalid email address",
+        });
+    }
+
+    return { email };
+}
+
+function validateName(body: object): { name: string } {
+    const Code = APIResponseCode.Error.SignUp.Form.Name;
+    if (!("name" in body)) {
+        throw new APISignUpFormNameErrorResponse({ code: Code.NAME_NOT_PRESENT, message: "Name is required" });
+    }
+
+    const name = body.name;
+
+    console.log("name:", name);
+
+    if (typeof name !== "string") {
+        throw new APISignUpFormNameErrorResponse({ code: Code.NAME_NOT_A_STRING, message: "Name must be a string" });
+    }
+
+    const trimmedName = name.trim();
+
+    if (trimmedName.length < 2) {
+        throw new APISignUpFormNameErrorResponse({
+            code: Code.NAME_TOO_SHORT,
+            message: "Name must be at least 2 characters",
+        });
+    }
+
+    if (trimmedName.length > 50) {
+        throw new APISignUpFormNameErrorResponse({
+            code: Code.NAME_TOO_LONG,
+            message: "Name must not exceed 50 characters",
+        });
+    }
+
+    return { name };
+}
+
+function validatePassword(bodyObj: object): { password: string } {
+    const Code = APIResponseCode.Error.SignUp.Form.Password;
+
+    if (!("password" in bodyObj)) {
+        throw new APISignUpFormPasswordErrorResponse({
+            code: Code.PASSWORD_NOT_PRESENT,
+            message: "Password is required",
+        });
+    }
+
+    const password = bodyObj.password;
+
+    if (typeof password !== "string") {
+        throw new APISignUpFormPasswordErrorResponse({
+            code: Code.PASSWORD_NOT_A_STRING,
+            message: "Password must be a string",
+        });
+    }
+
+    if (password.length < 8) {
+        throw new APISignUpFormPasswordErrorResponse({
+            code: Code.PASSWORD_TOO_SHORT,
+            message: "Password must be at least 8 characters",
+        });
+    }
+
+    if (password.length > 64) {
+        throw new APISignUpFormPasswordErrorResponse({
+            code: Code.PASSWORD_TOO_LONG,
+            message: "Password must not exceed 64 characters",
+        });
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        throw new APISignUpFormPasswordErrorResponse({
+            code: Code.PASSWORD_MISSING_UPPERCASE,
+            message: "Password must contain at least one uppercase letter",
+        });
+    }
+
+    if (!/[a-z]/.test(password)) {
+        throw new APISignUpFormPasswordErrorResponse({
+            code: Code.PASSWORD_MISSING_LOWERCASE,
+            message: "Password must contain at least one lowercase letter",
+        });
+    }
+
+    if (!/[0-9]/.test(password)) {
+        throw new APISignUpFormPasswordErrorResponse({
+            code: Code.PASSWORD_MISSING_NUMBER,
+            message: "Password must contain at least one number",
+        });
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        throw new APISignUpFormPasswordErrorResponse({
+            code: Code.PASSWORD_MISSING_SPECIAL_CHARACTER,
+            message: "Password must contain at least one special character",
+        });
+    }
+
+    return { password };
+}
+
+function validateReferralCode(bodyObj: object): { referralCode: string } {
+    const Code = APIResponseCode.Error.SignUp.Form.ReferralCode;
+
+    if (!("referralCode" in bodyObj)) {
+        throw new APISignUpFormReferralCodeErrorResponse({
+            code: Code.REFERRAL_CODE_NOT_PRESENT,
+            message: "Referral code is required to signUp",
+        });
+    }
+
+    if (typeof bodyObj["referralCode"] !== "string") {
+        throw new APISignUpFormReferralCodeErrorResponse({
+            code: Code.REFERRAL_CODE_NOT_A_STRING,
+            message: "Referral code must be a string",
+        });
+    }
+
+    const referralCode = bodyObj.referralCode.toUpperCase();
+
+    if (referralCode.length !== 15) {
+        throw new APISignUpFormReferralCodeErrorResponse({
+            code: Code.INVALID_REFERRAL_CODE_LENGTH,
+            message: "Referral code must be exactly 15 characters",
+        });
+    }
+
+    if (!referralCode.startsWith("REF")) {
+        throw new APISignUpFormReferralCodeErrorResponse({
+            code: Code.REFERRAL_CODE_NOT_START_WITH_REF,
+            message: "Referral code must start with `REF`",
+        });
+    }
+
+    return { referralCode: referralCode.slice(3) };
+}
+
+export async function POST(
+    req: NextRequest,
+): Promise<APISignUpSuccessResponse | APISignUpErrorResponse | APIErrorResponse> {
     try {
-        try {
-            const { email, password, name } = SignUpUser.parse(await request.json());
-            const users = Globals.mongoDB.users();
+        const bodyObj = await req.json();
+        const { name } = validateName(bodyObj);
+        const { password } = validatePassword(bodyObj);
+        const { email } = validateEmail(bodyObj);
+        const { referralCode } = validateReferralCode(bodyObj);
+        const { captchaRes } = validateCaptcha(bodyObj);
 
-            const existingUser = await users.findOne({ email });
+        const service = await new ServiceManager().setup();
 
-            if (existingUser) {
-                return NextResponse.json(
-                    { status: APIResponseCode.GENERIC_ERROR, message: "User already exists" },
-                    { status: 409 },
-                );
-            }
+        const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+            method: "POST",
+            body: JSON.stringify({
+                //secret: Globals.env.cloudflareTurnstile.SECRET_KEY,
+                secret: service.env.CF_TURNSTILE_SECRET_KEY,
+                response: captchaRes,
+            }),
 
-            const hashedPassword = await bcrypt.hash(password, 10);
+            headers: {
+                "content-type": "application/json",
+            },
+        });
 
-            // Generate verification token
-            const emailVerificationToken = new ObjectId(crypto.randomBytes(12));
-            const emailVerificationTokenExpirySeconds = 15 * 60; // 15 minutes
+        const resObj = (await res.json()) as { success: boolean };
 
-            const createdAt = new Date();
-
-            const user: MUser = {
-                email,
-                password: hashedPassword,
-                name,
-                isVerified: false,
-                accountsRedeemed: 0,
-                createdAt,
-            };
-
-            const result = await users.insertOne(user, {});
-
-            Globals.mongoDB.emailVerificationTokens().insertOne(
-                {
-                    _id: emailVerificationToken,
-                    userID: result.insertedId,
-                    createdAt,
-                    expiry: new Date(createdAt.getTime() + emailVerificationTokenExpirySeconds * 1000),
-                },
-                {},
-            );
-
-            // Send verification email
-            sendVerificationEmail(
-                email,
-                name,
-                emailVerificationToken.toHexString(),
-                emailVerificationTokenExpirySeconds,
-            ).then((success) => {
-                if (!success) {
-                    console.error("[[ ERROR ]] Failed to send verification email");
-                }
+        console.log(resObj);
+        if (!resObj.success) {
+            throw new APISignUpErrorResponse(400, {
+                code: APIResponseCode.Error.SignUp.Captcha.CAPTCHA_FAILED,
+                message: "Captcha validation failed",
             });
+        }
 
-            return NextResponse.json(
-                {
-                    status: APIResponseCode.SUCCESS,
-                    message: "User created successfully | Please check your email to verify your account",
-                    data: {
-                        id: result.insertedId.toString(),
-                        email,
-                        name,
-                    },
-                },
-                { status: 201 },
-            );
-        } catch (err) {
-            if (err instanceof zod.ZodError) {
-                return NextResponse.json(
-                    { status: APIResponseCode.GENERIC_ERROR, message: err.issues[0].message },
-                    { status: 400 },
-                );
+        const registryDB = service.mongoDBClient.db("registry");
+        const userCollection = registryDB.collection("users");
+        const exUser = await userCollection.findOne({ email });
+
+        if (exUser) {
+            throw new APISignUpErrorResponse(409, {
+                code: APIResponseCode.Error.SignUp.EMAIL_ALREADY_EXISTS,
+                message: "User with email already exists",
+            });
+        }
+
+        let referredBy: ObjectId | undefined;
+
+        if (referralCode !== service.env.ROOT_REFERRAL_CODE) {
+            const referredByUser = await userCollection.findOne({ referralCode });
+
+            if (!referredByUser) {
+                throw new APISignUpErrorResponse(404, {
+                    code: APIResponseCode.Error.SignUp.REFERRAL_CODE_NOT_FOUND,
+                    message: "Referral code not found",
+                });
             }
 
-            throw err;
-        }
-    } catch (err) {
-        console.error("[[ ERROR ]] Sign up error:", err);
-        if (err instanceof SyntaxError) {
-            return NextResponse.json({ status: APIResponseCode.GENERIC_ERROR, message: err.message }, { status: 400 });
+            referredBy = referredByUser._id;
         }
 
-        return NextResponse.json(
-            { status: APIResponseCode.GENERIC_ERROR, message: "Internal server error" },
-            { status: 500 },
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const createdAt = new Date();
+
+        const id = new ObjectId();
+        const user: MUser = {
+            _id: id,
+            email,
+            password: hashedPassword,
+            name,
+            isVerified: false,
+            referredBy: referredBy || id,
+            referralCode: crypto.randomBytes(6).toString("hex").toUpperCase(),
+            createdAt: new Date(),
+            permissions: {},
+        };
+
+        const result = await userCollection.insertOne(user, {});
+
+        const emailVfToken = new ObjectId(crypto.randomBytes(12));
+        const emailVfTokExpSecs = 15 * 60; // 15 minutes
+
+        const emailVfTokensCollection = registryDB.collection("emailVfTokens");
+        emailVfTokensCollection.insertOne(
+            {
+                _id: emailVfToken,
+                userID: result.insertedId,
+                createdAt,
+                expiry: new Date(createdAt.getTime() + emailVfTokExpSecs * 1000),
+            },
+            {},
         );
+
+        // Send verification email
+        sendVerificationEmail(email, name, emailVfToken.toHexString(), emailVfTokExpSecs).then((success) => {
+            if (!success) {
+                console.error("[[ ERROR ]] Failed to send verification email");
+            }
+        });
+
+        return new APISignUpSuccessResponse({ message: "User created successfully", data: { user: { email, name } } });
+    } catch (err) {
+        if (err instanceof APISignUpErrorResponse) {
+            return err;
+        }
+
+        return new APIErrorResponse(500, {
+            code: APIResponseCode.Error.UNKNOWN_ERROR,
+            message: "Oops, unknown server error",
+        });
     }
 }

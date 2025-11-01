@@ -10,7 +10,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-    title: "Keymaster",
+    title: "Pattachitra registry",
     description: "Account management dashboard",
 };
 

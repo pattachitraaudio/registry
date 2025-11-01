@@ -134,7 +134,7 @@ export async function GET(request: Request) {
 
 */
 
-import { APIResponseCode } from "@/app/enums/APIResponseCode";
+import { APIResponseCode } from "@/enums/APIResponseCode";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {

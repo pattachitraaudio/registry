@@ -1,83 +1,190 @@
-import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { createSession, setSessionCookie } from "@/lib/session";
-import { ErrorResponse } from "@/interfaces/APIResponses/ErrorResponse";
-import { APIResponseCode } from "@/app/enums/APIResponseCode";
-import { Globals } from "@/config/globals";
-import { UserResponse } from "@/interfaces/APIResponses/UserResponse";
 
-export async function POST(request: Request): Promise<NextResponse<ErrorResponse> | NextResponse<UserResponse>> {
+import { APIResponseCode } from "@/enums/APIResponseCode";
+import { APIErrorResponse } from "@/classes/apiResponses/APIResponse";
+
+import {
+    APILoginErrorResponse,
+    APILoginFormEmailErrorResponse,
+    APILoginFormPasswordErrorResponse,
+    APILoginSuccessResponse,
+} from "@/classes/apiResponses/login";
+import { IAPILoginErrorResponse, IAPILoginSuccessResponse } from "@/interfaces/apiResponses/login";
+import { IAPIErrorResponse } from "@/interfaces/apiResponses/iAPIResponse";
+import { ServiceManager } from "@/classes/xServiceManager";
+import { MUser } from "@/models/mUser";
+
+function validateEmail(bodyObj: object): { email: string } {
+    const Code = APIResponseCode.Error.Login.Form.Email;
+
+    if (!("email" in bodyObj)) {
+        throw new APILoginFormEmailErrorResponse({ code: Code.EMAIL_NOT_PRESENT, message: "Email not present" });
+    }
+
+    const email = bodyObj.email;
+
+    if (typeof email !== "string") {
+        throw new APILoginFormEmailErrorResponse({ code: Code.EMAIL_NOT_A_STRING, message: "Email must be a string" });
+    }
+
+    if (!email.match(/^[a-z0-9]+@/)) {
+        throw new APILoginFormEmailErrorResponse({
+            code: Code.INVALID_USERNAME,
+            message:
+                "Email username must contain only letters and numbers (no dots, underscores, or special characters)",
+        });
+    }
+
+    if (!email.match(/@[a-z0-9]+\./)) {
+        throw new APILoginFormEmailErrorResponse({
+            code: Code.INVALID_DOMAIN_NAME,
+            message: "Email domain must contain only letters and numbers (no underscores or special characters)",
+        });
+    }
+
+    if (!email.match(/^[^.]*@[^.]*\.[^.]*$/)) {
+        throw new APILoginFormEmailErrorResponse({
+            code: Code.INVALID_DOMAIN_NAME,
+            message: "Email must not contain subdomains (format: username@domain.tld)",
+        });
+    }
+
+    if (!email.match(/^[a-z0-9]+@[a-z0-9]+\.[a-z]{2,}$/)) {
+        throw new APILoginFormEmailErrorResponse({
+            code: Code.FAILED_TO_VALIDATE_EMAIL,
+            message: "Invalid email address",
+        });
+    }
+
+    return { email };
+}
+
+function validatePassword(bodyObj: object): { password: string } {
+    const Code = APIResponseCode.Error.Login.Form.Password;
+
+    if (!("password" in bodyObj)) {
+        throw new APILoginFormPasswordErrorResponse({
+            code: Code.PASSWORD_NOT_PRESENT,
+            message: "Password is required",
+        });
+    }
+
+    const password = bodyObj.password;
+
+    if (typeof password !== "string") {
+        throw new APILoginFormPasswordErrorResponse({
+            code: Code.PASSWORD_NOT_A_STRING,
+            message: "Password must be a string",
+        });
+    }
+
+    if (password.length < 8) {
+        throw new APILoginFormPasswordErrorResponse({
+            code: Code.PASSWORD_TOO_SHORT,
+            message: "Password must be at least 8 characters",
+        });
+    }
+
+    if (password.length > 64) {
+        throw new APILoginFormPasswordErrorResponse({
+            code: Code.PASSWORD_TOO_LONG,
+            message: "Password must not exceed 64 characters",
+        });
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        throw new APILoginFormPasswordErrorResponse({
+            code: Code.PASSWORD_MISSING_UPPERCASE,
+            message: "Password must contain at least one uppercase letter",
+        });
+    }
+
+    if (!/[a-z]/.test(password)) {
+        throw new APILoginFormPasswordErrorResponse({
+            code: Code.PASSWORD_MISSING_LOWERCASE,
+            message: "Password must contain at least one lowercase letter",
+        });
+    }
+
+    if (!/[0-9]/.test(password)) {
+        throw new APILoginFormPasswordErrorResponse({
+            code: Code.PASSWORD_MISSING_NUMBER,
+            message: "Password must contain at least one number",
+        });
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        throw new APILoginFormPasswordErrorResponse({
+            code: Code.PASSWORD_MISSING_SPECIAL_CHARACTER,
+            message: "Password must contain at least one special character",
+        });
+    }
+
+    return { password };
+}
+
+export type PostLoginRouteHandlerReturnType = IAPILoginSuccessResponse | IAPILoginErrorResponse | IAPIErrorResponse;
+
+export async function POST(
+    request: Request,
+): Promise<APILoginSuccessResponse | APILoginErrorResponse | APIErrorResponse> {
     try {
-        // TODO: Use zod for schema vaildation
-        const { email, password } = await request.json();
+        const bodyObj = await request.json();
 
-        if (!email || !password) {
-            return NextResponse.json(
-                { status: APIResponseCode.GENERIC_ERROR, message: "Missing required fields" },
-                { status: 400 },
-            );
-        }
+        const { email } = validateEmail(bodyObj);
+        const { password } = validatePassword(bodyObj);
 
-        /*
-        const client = await clientPromise;
-        const db = client.db();
-        const usersCollection = db.collection<MUser>("users");
-
-        const user = await usersCollection.findOne({ email });
-        */
-
-        const users = Globals.mongoDB.users();
-        const user = await users.findOne({ email: email });
+        // const users = Globals.mongoDB.users();
+        const userCollection = (await new ServiceManager().setup()).mongoDBClient
+            .db("registry")
+            .collection<MUser>("users");
+        const user = await userCollection.findOne({ email: email });
 
         if (!user) {
-            return NextResponse.json(
-                { status: APIResponseCode.GENERIC_ERROR, message: "User not found" },
-                { status: 401 },
-            );
+            throw new APILoginErrorResponse(401, {
+                code: APIResponseCode.Error.Login.EMAIL_NOT_FOUND,
+                message: `No user with email \`${email}\` found`,
+            });
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isValidPass = await bcrypt.compare(password, user.password);
 
-        if (!isPasswordValid) {
-            return NextResponse.json(
-                { status: APIResponseCode.GENERIC_ERROR, message: "Incorrect password" },
-                { status: 401 },
-            );
+        if (!isValidPass) {
+            throw new APILoginErrorResponse(401, {
+                code: APIResponseCode.Error.Login.INCORRECT_PASSWORD,
+                message: "Incorrect password",
+            });
         }
 
         // Check if email is verified
         if (!user.isVerified) {
-            return NextResponse.json(
-                {
-                    status: APIResponseCode.GENERIC_ERROR,
-                    message: "Email not verified",
-                },
-                { status: 403 },
-            );
+            throw new APILoginErrorResponse(403, {
+                code: APIResponseCode.Error.Login.EMAIL_NOT_VERIFIED,
+                message: "Verify your email before logging in",
+            });
         }
 
-        // Create session token and set cookie
+        const cookieManager = (await new ServiceManager().setup()).cookieManager;
+        const cookie = await cookieManager.create(user);
 
-        const session = await createSession({ id: user._id.toHexString() });
-        await setSessionCookie(session);
-
-        return NextResponse.json(
-            {
-                status: APIResponseCode.SUCCESS,
-                message: "Login successful",
-                data: {
-                    id: user._id.toString(),
+        return new APILoginSuccessResponse([["Set-Cookie", cookie]], {
+            data: {
+                user: {
                     email: user.email,
                     name: user.name,
                 },
             },
-            { status: 200 },
-        );
-    } catch (error) {
-        console.error("Login error:", error);
-        return NextResponse.json(
-            { status: APIResponseCode.GENERIC_ERROR, message: "Internal server error" },
-            { status: 500 },
-        );
+            message: "Logged in successfully",
+        });
+    } catch (err) {
+        if (err instanceof APIErrorResponse) {
+            return err;
+        }
+
+        return new APIErrorResponse(500, {
+            code: APIResponseCode.Error.UNKNOWN_ERROR,
+            message:
+                "Whoa, server has encountered an unknown error. If you see this message, please report to the administrator",
+        });
     }
 }

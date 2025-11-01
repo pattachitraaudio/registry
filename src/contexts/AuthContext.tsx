@@ -2,9 +2,11 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import { IUser } from "@/interfaces/IUser";
-import { ErrorResponse } from "@/interfaces/APIResponses/ErrorResponse";
-import { UserResponse } from "@/interfaces/APIResponses/UserResponse";
-import { APIResponseCode } from "@/app/enums/APIResponseCode";
+import { APIResponseCode } from "@/enums/APIResponseCode";
+import { IAPISessionErrorResponse, IAPISessionSuccessResponse } from "@/interfaces/apiResponses/session";
+import { IAPILoginErrorResponse, IAPILoginSuccessResponse } from "@/interfaces/apiResponses/login";
+import { PostLoginRouteHandlerReturnType } from "@/app/api/auth/login/route";
+import { IAPIErrorResponse } from "@/interfaces/apiResponses/iAPIResponse";
 
 interface AuthContextType {
     user: IUser | null;
@@ -17,6 +19,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export type GetSessionRouteHandlerReturnType =
+    | IAPISessionSuccessResponse
+    | IAPISessionErrorResponse
+    | IAPIErrorResponse;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<IUser | null>(null);
     const [loading, setLoading] = useState(true);
@@ -28,12 +35,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 const res = await fetch("/api/auth/session");
 
-                const resObj = (await res.json()) as UserResponse | ErrorResponse;
+                const resObj = (await res.json()) as GetSessionRouteHandlerReturnType;
                 console.log("resObj:", resObj);
 
-                if (resObj.status === APIResponseCode.SUCCESS) {
+                if (resObj.code === APIResponseCode.SUCCESS) {
                     console.log("wow! auth success");
-                    setUser(resObj.data);
+                    setUser(resObj.data.user);
                 }
             } catch (error) {
                 console.error("Session check failed:", error);
@@ -55,10 +62,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 body: JSON.stringify({ email, password }),
             });
 
-            const resObj = (await res.json()) as ErrorResponse | UserResponse;
+            const resObj = (await res.json()) as PostLoginRouteHandlerReturnType;
             // console.log(resObj);
 
-            if (resObj.status === APIResponseCode.GENERIC_ERROR) {
+            console.log("HEre!!!");
+            if (!(resObj.code === APIResponseCode.SUCCESS)) {
                 // TODO: If email needs verification, redirect to checkEmail page
                 /*
                 if (data.needsVerification) {
@@ -66,9 +74,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     return;
                 }
                     */
+                console.log("error here!...");
                 setError(resObj.message || "Login failed");
                 throw new Error("GENERIC_ERROR");
             }
+
+            setUser(resObj.data.user);
         } catch (err) {
             setError("An error occurred. Please try again.");
             setLoading(false);

@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { MAccount } from "./MAccount";
+import { MAccount } from "./mElevenlabsAccount";
 
 export interface MDeletedAccount extends MAccount {
     _id: string;

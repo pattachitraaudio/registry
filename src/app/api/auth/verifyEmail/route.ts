@@ -1,59 +1,94 @@
-import { NextResponse } from "next/server";
-// import clientPromise from "@/lib/mongoDB";
-import { MUser } from "@/models/MUser";
-import { Globals } from "@/config/globals";
 import { ObjectId } from "mongodb";
-import { ErrorResponse } from "@/interfaces/APIResponses/ErrorResponse";
-import { SuccessResponse } from "@/interfaces/APIResponses/SuccessResponse";
-import { APIResponseCode } from "@/app/enums/APIResponseCode";
+import { APIResponseCode } from "@/enums/APIResponseCode";
+import { APIErrorResponse, APIResponse } from "@/classes/apiResponses/APIResponse";
 
-export async function POST(request: Request): Promise<NextResponse<ErrorResponse> | NextResponse<SuccessResponse>> {
+import {
+    APIVerifyEmailVfTokenErrorResponse,
+    APIVerifyEmailErrorResponse,
+    APIVerifyEmailSuccessResponse,
+} from "@/classes/apiResponses/verifyEmail";
+import { ServiceManager } from "@/classes/xServiceManager";
+
+function validateToken(bodyObj: object): { vfToken: string } {
+    const Code = APIResponseCode.Error.VerifyEmail.VfToken;
+
+    if (!("vfToken" in bodyObj)) {
+        throw new APIVerifyEmailVfTokenErrorResponse({
+            code: Code.NOT_PRESENT,
+            message: "Verification token is required",
+        });
+    }
+
+    if (typeof bodyObj["vfToken"] !== "string") {
+        throw new APIVerifyEmailVfTokenErrorResponse({
+            code: Code.NOT_A_STRING,
+            message: "Verification token must be of type string",
+        });
+    }
+
+    const vfToken = bodyObj["vfToken"];
+
+    if (vfToken.length !== 24) {
+        throw new APIVerifyEmailVfTokenErrorResponse({
+            code: Code.INVALID_LENGTH,
+            message: "Verification token must be exactly 24 characters long",
+        });
+    }
+
+    if (!/^[0-9a-fA-F]+$/.test(vfToken)) {
+        throw new APIVerifyEmailVfTokenErrorResponse({
+            code: Code.NON_HEX_CHARACTER,
+            message: "Verification token must contain only hexadecimal characters",
+        });
+    }
+
+    return { vfToken };
+}
+
+export async function POST(request: Request): Promise<APIResponse> {
     try {
-        const { token } = await request.json();
+        const Code = APIResponseCode.Error.VerifyEmail;
+        const bodyObj = await request.json();
+        const { vfToken } = validateToken(bodyObj);
 
-        if (!token) {
-            NextResponse.json(
-                { status: APIResponseCode.GENERIC_ERROR, message: "Verification token is required" },
-                { status: 400 },
-            );
+        const id = ObjectId.createFromHexString(vfToken);
+
+        // const emailVfTokens = Globals.mongoDB.emailVerificationTokens();
+        const serviceManager = await new ServiceManager().setup();
+        const registryDB = serviceManager.mongoDBClient.db("registry");
+        const emailVfTokensCollection = registryDB.collection("emailVfTokens");
+        const emailVfToken = await emailVfTokensCollection.findOne({ _id: id });
+
+        if (!emailVfToken) {
+            return new APIVerifyEmailErrorResponse(404, {
+                code: Code.VERIFICATION_TOKEN_NOT_FOUND,
+                message: "Verification token not found",
+            });
         }
 
-        const id = ObjectId.createFromHexString(token);
+        if (emailVfToken.expiry < new Date()) {
+            emailVfTokensCollection.deleteOne({ _id: id });
 
-        const emailVerificationTokens = Globals.mongoDB.emailVerificationTokens();
-        const emailVerificationToken = await emailVerificationTokens.findOne({ _id: id });
-
-        if (!emailVerificationToken) {
-            return NextResponse.json(
-                { status: APIResponseCode.GENERIC_ERROR, message: "Verification token not found" },
-                { status: 404 },
-            );
+            return new APIVerifyEmailErrorResponse(410, {
+                code: Code.VERIFICATION_TOKEN_EXPIRED,
+                message: "Verification token has expired",
+            });
         }
 
-        if (emailVerificationToken.expiry < new Date()) {
-            emailVerificationTokens.deleteOne({ _id: id });
-
-            return NextResponse.json(
-                { status: APIResponseCode.GENERIC_ERROR, message: "Verification token has expired" },
-                { status: 410 },
-            );
-        }
-
-        const users = Globals.mongoDB.users();
-        const user = await users.findOne({ _id: emailVerificationToken.userID });
+        // const users = Globals.mongoDB.users();
+        const userCollection = registryDB.collection("users");
+        const user = await userCollection.findOne({ _id: emailVfToken.userID });
 
         if (!user) {
-            return NextResponse.json(
-                {
-                    status: APIResponseCode.GENERIC_ERROR,
-                    message: "User not found",
-                },
-                { status: 404 },
-            );
+            return new APIVerifyEmailErrorResponse(404, {
+                code: Code.USER_NOT_FOUND,
+
+                message: "User not found",
+            });
         }
 
         // TODO: make these two updates a transaction
-        await users.updateOne(
+        await userCollection.updateOne(
             { _id: user._id },
             {
                 $set: {
@@ -62,20 +97,20 @@ export async function POST(request: Request): Promise<NextResponse<ErrorResponse
             },
         );
 
-        await emailVerificationTokens.deleteOne({ _id: id });
+        await emailVfTokensCollection.deleteOne({ _id: id });
 
-        return NextResponse.json(
-            {
-                status: APIResponseCode.SUCCESS,
-                message: "Email verified successfully",
-            },
-            { status: 200 },
-        );
-    } catch (error) {
-        console.error("Email verification error:", error);
-        return NextResponse.json(
-            { status: APIResponseCode.GENERIC_ERROR, message: "Internal server error" },
-            { status: 500 },
-        );
+        return new APIVerifyEmailSuccessResponse({
+            message: "Email verified successfully",
+            data: { user: { name: user.name, email: user.email } },
+        });
+    } catch (err) {
+        if (err instanceof APIVerifyEmailErrorResponse) {
+            return err;
+        }
+
+        return new APIErrorResponse(500, {
+            code: APIResponseCode.Error.UNKNOWN_ERROR,
+            message: "Oops, unknown error! please report this to the admin",
+        });
     }
 }

@@ -1,19 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+declare global {
+    interface Window {
+        cloudflareTurnstileOnSuccessCallback?: (token: string) => void;
+        cloudflareTurnstileOnErrorCallback?: () => void;
+        cloudflareTurnstileOnExpiredCallback?: () => void;
+        turnstile: Turnstile.Turnstile;
+    }
+}
+
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { APIResponseCode } from "../enums/APIResponseCode";
-import { UserResponse } from "@/interfaces/APIResponses/UserResponse";
-import { ErrorResponse } from "@/interfaces/APIResponses/ErrorResponse";
-import { GenericErrorResponse } from "@/interfaces/APIResponses/GenericErrorResponse";
-// import { Input } from "@/components/ui/input";
+import Script from "next/script";
+import { IAPISignUpErrorResponse, IAPISignUpSuccessResponse } from "@/interfaces/apiResponses/signUp";
+import { APIResponseCode } from "@/enums/APIResponseCode";
 
 export default function SignUpPage() {
     const router = useRouter();
@@ -22,8 +28,12 @@ export default function SignUpPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [referralCode, setReferralCode] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [formSubmissionState, setFormSubmissionState] = useState<true | false>(false);
+    const [captchaRes, setCaptchaRes] = useState("");
+    const turnstileRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Redirect if already logged in
@@ -31,6 +41,26 @@ export default function SignUpPage() {
             router.push("/");
         }
     }, [user, authLoading, router]);
+
+    // Expose turnstile functions
+    useEffect(() => {
+        window.cloudflareTurnstileOnSuccessCallback = function (token: string) {
+            setFormSubmissionState(true);
+            setCaptchaRes(token);
+        };
+        window.cloudflareTurnstileOnErrorCallback = function () {
+            console.log("turnstileError");
+        };
+        window.cloudflareTurnstileOnExpiredCallback = function () {
+            console.log("turnstileExpired");
+        };
+
+        return () => {
+            delete window.cloudflareTurnstileOnSuccessCallback;
+            delete window.cloudflareTurnstileOnErrorCallback;
+            delete window.cloudflareTurnstileOnExpiredCallback;
+        };
+    });
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -54,102 +84,32 @@ export default function SignUpPage() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ name, email, password }),
+                body: JSON.stringify({ name, email, password, referralCode, captchaRes }),
             });
 
-            const resObj = (await res.json()) as UserResponse | GenericErrorResponse;
+            const resObj = (await res.json()) as IAPISignUpErrorResponse | IAPISignUpSuccessResponse;
 
-            if (resObj.status === APIResponseCode.GENERIC_ERROR) {
-                setError(resObj.message);
-                return;
+            if (resObj.code !== APIResponseCode.SUCCESS) {
+                if (turnstileRef.current) {
+                    window.turnstile.reset(turnstileRef.current);
+                }
             }
 
-            // Redirect to check email page
-            router.push(`/checkEmail?email=${encodeURIComponent(resObj.data.email)}`);
+            console.log(resObj);
+            if (resObj.code === APIResponseCode.SUCCESS) {
+                // Redirect to check email page
+                // console.log("yes!");
+                router.push(`/checkEmail?email=${encodeURIComponent(resObj.data.user.email)}`);
+            } else {
+                // console.log("gadha is here");
+                setError(resObj.message);
+            }
         } catch {
             setError("An error has occurred");
         } finally {
             setLoading(false);
         }
     }
-
-    /*
-    return (
-        <div className="flex min-h-screen items-center justify-center bg-background p-4">
-            <Card className="w-full max-w-md">
-                <CardHeader>
-                    <CardTitle className="text-2xl">Create an account</CardTitle>
-                    <CardDescription>Enter your information to get started</CardDescription>
-                </CardHeader>
-                <form onSubmit={handleSubmit}>
-                    <CardContent className="space-y-4">
-                        {error && (
-                            <div className="rounded-md bg-destructive/10 border border-destructive/50 p-3 text-sm text-destructive">
-                                {error}
-                            </div>
-                        )}
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Name</Label>
-                            <Input
-                                id="name"
-                                type="text"
-                                placeholder="John Doe"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="you@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="confirmPassword">Confirm Password</Label>
-                            <Input
-                                id="confirmPassword"
-                                type="password"
-                                placeholder="••••••••"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </CardContent>
-                    <CardFooter className="flex flex-col space-y-4">
-                        <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? "Creating account..." : "Sign up"}
-                        </Button>
-                        <p className="text-center text-sm text-muted-foreground">
-                            Already have an account?{" "}
-                            <Link href="/login" className="font-medium text-primary hover:underline">
-                                Login
-                            </Link>
-                        </p>
-                    </CardFooter>
-                </form>
-            </Card>
-        </div>
-    );
-    }
-    */
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -200,9 +160,9 @@ export default function SignUpPage() {
                                 </FieldDescription>
                             </Field>
                             <Field>
-                                <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
+                                <FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
                                 <Input
-                                    id="confirm-password"
+                                    id="confirmPassword"
                                     type="password"
                                     required
                                     placeholder="••••••••"
@@ -210,9 +170,32 @@ export default function SignUpPage() {
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                 />
                             </Field>
+                            <Field>
+                                <FieldLabel htmlFor="referralCode">Referral code</FieldLabel>
+                                <Input
+                                    id="confirmPassword"
+                                    type="text"
+                                    required
+                                    placeholder="REF12345"
+                                    value={referralCode}
+                                    onChange={(e) => setReferralCode(e.target.value)}
+                                />
+                            </Field>
                             <FieldGroup>
+                                <Field
+                                    className="grid justify-center cf-turnstile"
+                                    data-sitekey="0x4AAAAAAB6mq_Lf3mTf0mCa"
+                                    data-theme="dark"
+                                    data-size="normal"
+                                    data-callback="cloudflareTurnstileOnSuccessCallback"
+                                    data-error-callback="cloudflareTurnstileOnErrorCallback"
+                                    data-expired-callback="cloudflareTurnstileOnExpiredCallback"
+                                    ref={turnstileRef}
+                                ></Field>
                                 <Field>
-                                    <Button type="submit">{loading ? "Creating account..." : "Sign up"}</Button>
+                                    <Button disabled={!formSubmissionState} type="submit">
+                                        {loading ? "Creating account..." : "Sign up"}
+                                    </Button>
                                     <FieldDescription className="px-6 text-center">
                                         Already have an account?{" "}
                                         <Link href="/login" className="font-medium text-primary hover:underline">
@@ -225,6 +208,7 @@ export default function SignUpPage() {
                     </form>
                 </CardContent>
             </Card>
+            <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></Script>
         </div>
     );
 }

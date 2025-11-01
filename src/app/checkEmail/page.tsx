@@ -107,7 +107,7 @@ function CheckEmailContent() {
         setError("");
 
         try {
-            const response = await fetch("/api/auth/resendverification", {
+            const response = await fetch("/api/auth/resendVerificationEmail", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

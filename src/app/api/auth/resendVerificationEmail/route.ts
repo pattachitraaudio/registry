@@ -61,9 +61,12 @@ export async function POST(request: Request) {
 }
 
 */
-import { APIResponseCode } from "@/app/enums/APIResponseCode";
+import { APIResponseCode } from "@/enums/APIResponseCode";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-    return NextResponse.json({ status: APIResponseCode.WORK_IN_PROGRESS, message: "Work in progress" });
+    return NextResponse.json(
+        { status: APIResponseCode.WORK_IN_PROGRESS, message: "Work in progress" },
+        { status: 404 },
+    );
 }

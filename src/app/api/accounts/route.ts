@@ -1,19 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 // import clientPromise from "@/lib/mongodb";
-import { Globals } from "@/config/globals";
-import { MAccount } from "@/models/MAccount";
-import { ErrorResponse } from "@/interfaces/APIResponses/ErrorResponse";
-import { SuccessResponse } from "@/interfaces/APIResponses/SuccessResponse";
-import { APIResponseCode } from "@/app/enums/APIResponseCode";
+import { Globals } from "@/globals/backend";
+import { MAccount } from "@/models/mElevenlabsAccount";
+// import { ErrorResponse } from "@/interfaces/APIResponses/ErrorResponse";
+// import { SuccessResponse } from "@/interfaces/APIResponses/SuccessResponse";
+// import { APIResponseCode } from "@/enums/APIResponseCode";
 // import { Global } from "recharts";
-import { UserResponse } from "@/interfaces/APIResponses/elevenlabs/UserResponse";
-import { getSession } from "@/lib/session";
+// import { UserResponse } from "@/interfaces/APIResponses/elevenlabs/UserResponse";
+// import { getSession } from "@/lib/CookieManager";
 import { IAccount } from "@/interfaces/IAccount";
-import { AccountsResponse } from "@/interfaces/APIResponses/AccountsResponse";
+// import { AccountsResponse } from "@/interfaces/APIResponses/AccountsResponse";
 
 // GET - Fetch all accounts for a user
-export async function GET(request: Request): Promise<NextResponse<ErrorResponse> | NextResponse<AccountsResponse>> {
+export async function GET(req: NextRequest): Promise<NextResponse<ErrorResponse> | NextResponse<AccountsResponse>> {
     try {
         /*
         const { searchParams } = new URL(request.url);

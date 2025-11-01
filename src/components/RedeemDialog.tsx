@@ -14,7 +14,7 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
-import { formatCurrency, ACCOUNT_VALUE_INR } from "@/config/constants";
+import { formatCurrency, ACCOUNT_VALUE_INR } from "@/constants";
 
 interface RedeemDialogProps {
     open: boolean;
@@ -24,13 +24,7 @@ interface RedeemDialogProps {
     onRedeemed: () => void;
 }
 
-export function RedeemDialog({
-    open,
-    onOpenChange,
-    userId,
-    availableAccounts,
-    onRedeemed,
-}: RedeemDialogProps) {
+export function RedeemDialog({ open, onOpenChange, userId, availableAccounts, onRedeemed }: RedeemDialogProps) {
     const [accountsToRedeem, setAccountsToRedeem] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -39,9 +33,7 @@ export function RedeemDialog({
 
     const handleRedeem = async () => {
         if (accountsToRedeem <= 0 || accountsToRedeem > availableAccounts) {
-            setError(
-                `Please enter a value between 1 and ${availableAccounts}`,
-            );
+            setError(`Please enter a value between 1 and ${availableAccounts}`);
             return;
         }
 
@@ -84,17 +76,11 @@ export function RedeemDialog({
                 <DialogClose onClick={() => onOpenChange(false)} />
                 <DialogHeader>
                     <DialogTitle>Redeem Accounts</DialogTitle>
-                    <DialogDescription>
-                        Select the number of accounts you want to redeem
-                    </DialogDescription>
+                    <DialogDescription>Select the number of accounts you want to redeem</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    {error && (
-                        <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
-                            {error}
-                        </div>
-                    )}
+                    {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
 
                     <div className="space-y-2">
                         <Label htmlFor="accounts">Number of Accounts</Label>
@@ -104,38 +90,26 @@ export function RedeemDialog({
                             min="1"
                             max={availableAccounts}
                             value={accountsToRedeem}
-                            onChange={(e) =>
-                                setAccountsToRedeem(parseInt(e.target.value) || 1)
-                            }
+                            onChange={(e) => setAccountsToRedeem(parseInt(e.target.value) || 1)}
                         />
-                        <p className="text-xs text-neutral-500">
-                            Available to redeem: {availableAccounts} accounts
-                        </p>
+                        <p className="text-xs text-neutral-500">Available to redeem: {availableAccounts} accounts</p>
                     </div>
 
                     <div className="rounded-lg bg-green-50 p-4 border border-green-200">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-green-900">
-                                    Total Redemption Value
-                                </p>
+                                <p className="text-sm font-medium text-green-900">Total Redemption Value</p>
                                 <p className="text-xs text-green-700">
                                     {accountsToRedeem} × {formatCurrency(ACCOUNT_VALUE_INR)}
                                 </p>
                             </div>
-                            <p className="text-2xl font-bold text-green-700">
-                                {formatCurrency(totalValue)}
-                            </p>
+                            <p className="text-2xl font-bold text-green-700">{formatCurrency(totalValue)}</p>
                         </div>
                     </div>
                 </div>
 
                 <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
                     <Button onClick={handleRedeem} disabled={loading}>

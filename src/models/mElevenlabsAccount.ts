@@ -1,10 +1,10 @@
 import { ObjectId } from "mongodb";
 
-export interface MAccount {
+export interface MElevenlabsAccount {
     _id: string;
-    userID: ObjectId;
     email: string;
     password: string;
     apiKey: string;
+    createdByuserID: ObjectId;
     createdOn: Date;
 }

@@ -1,5 +1,5 @@
-export interface IUser {
-    id: string;
+export type IUser = {
+    // id: string;
     name: string;
     email: string;
-}
+};
