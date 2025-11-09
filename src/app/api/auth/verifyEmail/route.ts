@@ -1,16 +1,16 @@
 import { ObjectId } from "mongodb";
-import { APIResponseCode } from "@/enums/APIResponseCode";
-import { APIErrorResponse, APIResponse } from "@/classes/apiResponses/APIResponse";
-
+import { APIResCode } from "@/enums/APIResCode";
+import { xAPIErrRes } from "@/types/apiResponse/xAPIRes";
 import {
     APIVerifyEmailVfTokenErrorResponse,
     APIVerifyEmailErrorResponse,
     APIVerifyEmailSuccessResponse,
-} from "@/classes/apiResponses/verifyEmail";
+} from "@/types/apiResponse/auth/verifyEmail";
 import { ServiceManager } from "@/classes/xServiceManager";
+import { NextRequest } from "next/server";
 
 function validateToken(bodyObj: object): { vfToken: string } {
-    const Code = APIResponseCode.Error.VerifyEmail.VfToken;
+    const Code = APIResCode.Error.VerifyEmail.VfToken;
 
     if (!("vfToken" in bodyObj)) {
         throw new APIVerifyEmailVfTokenErrorResponse({
@@ -45,17 +45,19 @@ function validateToken(bodyObj: object): { vfToken: string } {
     return { vfToken };
 }
 
-export async function POST(request: Request): Promise<APIResponse> {
+export async function POST(
+    req: NextRequest,
+): Promise<APIVerifyEmailSuccessResponse | APIVerifyEmailErrorResponse | xAPIErrRes> {
     try {
-        const Code = APIResponseCode.Error.VerifyEmail;
-        const bodyObj = await request.json();
+        const Code = APIResCode.Error.VerifyEmail;
+        const bodyObj = await req.json();
         const { vfToken } = validateToken(bodyObj);
 
         const id = ObjectId.createFromHexString(vfToken);
 
-        // const emailVfTokens = Globals.mongoDB.emailVerificationTokens();
         const serviceManager = await new ServiceManager().setup();
-        const registryDB = serviceManager.mongoDBClient.db("registry");
+        const mongoDBClient = serviceManager.mongoDBClient;
+        const registryDB = mongoDBClient.db("registry");
         const emailVfTokensCollection = registryDB.collection("emailVfTokens");
         const emailVfToken = await emailVfTokensCollection.findOne({ _id: id });
 
@@ -75,7 +77,6 @@ export async function POST(request: Request): Promise<APIResponse> {
             });
         }
 
-        // const users = Globals.mongoDB.users();
         const userCollection = registryDB.collection("users");
         const user = await userCollection.findOne({ _id: emailVfToken.userID });
 
@@ -87,29 +88,43 @@ export async function POST(request: Request): Promise<APIResponse> {
             });
         }
 
-        // TODO: make these two updates a transaction
-        await userCollection.updateOne(
-            { _id: user._id },
-            {
-                $set: {
-                    isVerified: true,
+        const mongoDBSession = mongoDBClient.startSession();
+
+        try {
+            mongoDBSession.startTransaction();
+
+            await userCollection.updateOne(
+                { _id: user._id },
+                {
+                    $set: {
+                        isVerified: true,
+                    },
                 },
-            },
-        );
+                { session: mongoDBSession },
+            );
+            await emailVfTokensCollection.deleteOne({ _id: id }, { session: mongoDBSession });
 
-        await emailVfTokensCollection.deleteOne({ _id: id });
+            mongoDBSession.commitTransaction();
 
-        return new APIVerifyEmailSuccessResponse({
-            message: "Email verified successfully",
-            data: { user: { name: user.name, email: user.email } },
-        });
+            return new APIVerifyEmailSuccessResponse({
+                message: "Email verified successfully",
+                data: { user: { name: user.name, email: user.email } },
+            });
+        } catch (err) {
+            mongoDBSession.abortTransaction();
+            throw err;
+        } finally {
+            mongoDBSession.endSession();
+        }
     } catch (err) {
         if (err instanceof APIVerifyEmailErrorResponse) {
             return err;
         }
 
-        return new APIErrorResponse(500, {
-            code: APIResponseCode.Error.UNKNOWN_ERROR,
+        console.log(err, JSON.stringify(err));
+
+        return new xAPIErrRes(500, {
+            code: APIResCode.Error.UNKNOWN_ERROR,
             message: "Oops, unknown error! please report this to the admin",
         });
     }

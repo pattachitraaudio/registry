@@ -1,21 +1,21 @@
 import bcrypt from "bcryptjs";
 
-import { APIResponseCode } from "@/enums/APIResponseCode";
-import { APIErrorResponse } from "@/classes/apiResponses/APIResponse";
+import { APIResCode } from "@/enums/APIResCode";
+import { xAPIErrRes } from "@/types/apiResponse/xAPIRes";
 
 import {
     APILoginErrorResponse,
     APILoginFormEmailErrorResponse,
     APILoginFormPasswordErrorResponse,
     APILoginSuccessResponse,
-} from "@/classes/apiResponses/login";
-import { IAPILoginErrorResponse, IAPILoginSuccessResponse } from "@/interfaces/apiResponses/login";
-import { IAPIErrorResponse } from "@/interfaces/apiResponses/iAPIResponse";
+} from "@/types/apiResponse/auth/login";
+
 import { ServiceManager } from "@/classes/xServiceManager";
-import { MUser } from "@/models/mUser";
+import { mUser } from "@/models/mUser";
+import { NextRequest, NextResponse } from "next/server";
 
 function validateEmail(bodyObj: object): { email: string } {
-    const Code = APIResponseCode.Error.Login.Form.Email;
+    const Code = APIResCode.Error.Login.Form.Email;
 
     if (!("email" in bodyObj)) {
         throw new APILoginFormEmailErrorResponse({ code: Code.EMAIL_NOT_PRESENT, message: "Email not present" });
@@ -60,7 +60,7 @@ function validateEmail(bodyObj: object): { email: string } {
 }
 
 function validatePassword(bodyObj: object): { password: string } {
-    const Code = APIResponseCode.Error.Login.Form.Password;
+    const Code = APIResCode.Error.Login.Form.Password;
 
     if (!("password" in bodyObj)) {
         throw new APILoginFormPasswordErrorResponse({
@@ -123,11 +123,11 @@ function validatePassword(bodyObj: object): { password: string } {
     return { password };
 }
 
-export type PostLoginRouteHandlerReturnType = IAPILoginSuccessResponse | IAPILoginErrorResponse | IAPIErrorResponse;
+// export type PostLoginRouteHandlerReturnType = IAPILoginSuccessResponse | IAPILoginErrorResponse | iAPIErrRes;
 
 export async function POST(
-    request: Request,
-): Promise<APILoginSuccessResponse | APILoginErrorResponse | APIErrorResponse> {
+    request: NextRequest,
+): Promise<APILoginSuccessResponse | APILoginErrorResponse | xAPIErrRes> {
     try {
         const bodyObj = await request.json();
 
@@ -137,12 +137,12 @@ export async function POST(
         // const users = Globals.mongoDB.users();
         const userCollection = (await new ServiceManager().setup()).mongoDBClient
             .db("registry")
-            .collection<MUser>("users");
+            .collection<mUser>("users");
         const user = await userCollection.findOne({ email: email });
 
         if (!user) {
             throw new APILoginErrorResponse(401, {
-                code: APIResponseCode.Error.Login.EMAIL_NOT_FOUND,
+                code: APIResCode.Error.Login.EMAIL_NOT_FOUND,
                 message: `No user with email \`${email}\` found`,
             });
         }
@@ -151,7 +151,7 @@ export async function POST(
 
         if (!isValidPass) {
             throw new APILoginErrorResponse(401, {
-                code: APIResponseCode.Error.Login.INCORRECT_PASSWORD,
+                code: APIResCode.Error.Login.INCORRECT_PASSWORD,
                 message: "Incorrect password",
             });
         }
@@ -159,7 +159,7 @@ export async function POST(
         // Check if email is verified
         if (!user.isVerified) {
             throw new APILoginErrorResponse(403, {
-                code: APIResponseCode.Error.Login.EMAIL_NOT_VERIFIED,
+                code: APIResCode.Error.Login.EMAIL_NOT_VERIFIED,
                 message: "Verify your email before logging in",
             });
         }
@@ -177,12 +177,12 @@ export async function POST(
             message: "Logged in successfully",
         });
     } catch (err) {
-        if (err instanceof APIErrorResponse) {
+        if (err instanceof xAPIErrRes) {
             return err;
         }
 
-        return new APIErrorResponse(500, {
-            code: APIResponseCode.Error.UNKNOWN_ERROR,
+        return new xAPIErrRes(500, {
+            code: APIResCode.Error.UNKNOWN_ERROR,
             message:
                 "Whoa, server has encountered an unknown error. If you see this message, please report to the administrator",
         });

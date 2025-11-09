@@ -1,7 +1,7 @@
 import { MongoClient } from "mongodb";
 import { EnvManager, EnvMap } from "./xEnvManager";
 import { CookieManager } from "./xCookieManager";
-import { CONSTANTS } from "@/constants";
+import { CONSTANT } from "@/constant";
 
 interface Service {
     env: EnvMap;
@@ -36,10 +36,10 @@ export class ServiceManager {
                 const env = await envManager.setup();
 
                 const mongoDBClient = await new MongoClient(env.MONGODB_URI, {
-                    appName: CONSTANTS.appInfo.name,
+                    appName: CONSTANT.appInfo.name,
                 }).connect();
 
-                const cookieManager = new CookieManager(env.JWT_SECRET, env.ENV_TYPE);
+                const cookieManager = await new CookieManager(env.JWT_SECRET, env.ENV_TYPE).setup(mongoDBClient);
 
                 return { env, mongoDBClient, cookieManager };
             } catch (err) {

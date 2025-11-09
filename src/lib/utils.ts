@@ -115,3 +115,7 @@ export function mergeJSONObjects(a: TypeJSONObject, b: TypeJSONObject): TypeJSON
 
     return merged as TypeJSONObject;
 }
+
+export type PrettifyObject<T extends object> = {
+    [Key in keyof T]: T[Key] extends object ? PrettifyObject<T[Key]> : T[Key];
+} & {};

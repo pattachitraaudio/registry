@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 
-export interface MUser {
+export interface mUser {
     _id: ObjectId;
     email: string;
     password: string;
@@ -18,7 +18,7 @@ export interface MUser {
 // accountsRedeemed: number; // Total number of accounts redeemed by user
 
 /*
-class MUser {
+class mUser {
     isVerified: boolean;
     createdAt: Date;
     constructor(
@@ -31,6 +31,6 @@ class MUser {
         this.createdAt = new Date();
     }
 }
-export { MUser };
+export { mUser };
 
 */

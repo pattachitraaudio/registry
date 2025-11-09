@@ -45,7 +45,7 @@ export default function LoginPage() {
 
             const resObj = (await response.json()) as ErrorResponse | 
 
-            if (resObj.status === APIResponseCode.GENERIC_ERROR) {
+            if (resObj.status === APIResCode.GENERIC_ERROR) {
                 // If email needs verification, redirect to checkEmail page
                 /*
                 if (data.needsVerification) {

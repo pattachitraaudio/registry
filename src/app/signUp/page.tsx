@@ -18,8 +18,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/contexts/AuthContext";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import Script from "next/script";
-import { IAPISignUpErrorResponse, IAPISignUpSuccessResponse } from "@/interfaces/apiResponses/signUp";
-import { APIResponseCode } from "@/enums/APIResponseCode";
+import { IAPISignUpErrorResponse, IAPISignUpSuccessResponse } from "@/types/apiResponse/auth/signUp";
+import { APIResCode } from "@/enums/APIResCode";
+import { neoFetch } from "@/neoFetch";
 
 export default function SignUpPage() {
     const router = useRouter();
@@ -79,6 +80,7 @@ export default function SignUpPage() {
         setLoading(true);
 
         try {
+            /*
             const res = await fetch("/api/auth/signUp", {
                 method: "POST",
                 headers: {
@@ -88,21 +90,29 @@ export default function SignUpPage() {
             });
 
             const resObj = (await res.json()) as IAPISignUpErrorResponse | IAPISignUpSuccessResponse;
+            */
+            const res = await neoFetch("/api/auth/signUp", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ name, email, password, referralCode, captchaRes }),
+            });
 
-            if (resObj.code !== APIResponseCode.SUCCESS) {
+            if (res.code !== APIResCode.SUCCESS) {
                 if (turnstileRef.current) {
                     window.turnstile.reset(turnstileRef.current);
                 }
             }
 
-            console.log(resObj);
-            if (resObj.code === APIResponseCode.SUCCESS) {
+            console.log(res);
+            if (res.code === APIResCode.SUCCESS) {
                 // Redirect to check email page
                 // console.log("yes!");
-                router.push(`/checkEmail?email=${encodeURIComponent(resObj.data.user.email)}`);
+                router.push(`/checkEmail?email=${encodeURIComponent(res.data.user.email)}`);
             } else {
                 // console.log("gadha is here");
-                setError(resObj.message);
+                setError(res.message);
             }
         } catch {
             setError("An error has occurred");

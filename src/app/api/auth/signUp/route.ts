@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { MUser } from "@/models/mUser";
+import { mUser } from "@/models/mUser";
 import { sendVerificationEmail } from "@/lib/email";
-import { APIResponseCode } from "@/enums/APIResponseCode";
+import { APIResCode } from "@/enums/APIResCode";
 import { ObjectId } from "mongodb";
-import { APIErrorResponse } from "@/classes/apiResponses/APIResponse";
+import { xAPIErrRes } from "@/types/apiResponse/xAPIRes";
 
 import {
     APISignUpErrorResponse,
@@ -14,12 +14,12 @@ import {
     APISignUpFormNameErrorResponse,
     APISignUpFormPasswordErrorResponse,
     APISignUpFormReferralCodeErrorResponse,
-} from "@/classes/apiResponses/signUp";
+} from "@/types/apiResponse/auth/signUp";
 
 import { ServiceManager } from "@/classes/xServiceManager";
 
 function validateCaptcha(bodyObj: object): { captchaRes: string } {
-    const Code = APIResponseCode.Error.SignUp.Captcha;
+    const Code = APIResCode.Error.SignUp.Captcha;
 
     if (!("captchaRes" in bodyObj)) {
         throw new APISignUpErrorResponse(400, {
@@ -39,7 +39,7 @@ function validateCaptcha(bodyObj: object): { captchaRes: string } {
 }
 
 function validateEmail(bodyObj: object): { email: string } {
-    const Code = APIResponseCode.Error.SignUp.Form.Email;
+    const Code = APIResCode.Error.SignUp.Form.Email;
 
     if (!("email" in bodyObj)) {
         throw new APISignUpFormEmailErrorResponse({
@@ -87,7 +87,7 @@ function validateEmail(bodyObj: object): { email: string } {
 }
 
 function validateName(body: object): { name: string } {
-    const Code = APIResponseCode.Error.SignUp.Form.Name;
+    const Code = APIResCode.Error.SignUp.Form.Name;
     if (!("name" in body)) {
         throw new APISignUpFormNameErrorResponse({ code: Code.NAME_NOT_PRESENT, message: "Name is required" });
     }
@@ -120,7 +120,7 @@ function validateName(body: object): { name: string } {
 }
 
 function validatePassword(bodyObj: object): { password: string } {
-    const Code = APIResponseCode.Error.SignUp.Form.Password;
+    const Code = APIResCode.Error.SignUp.Form.Password;
 
     if (!("password" in bodyObj)) {
         throw new APISignUpFormPasswordErrorResponse({
@@ -184,7 +184,7 @@ function validatePassword(bodyObj: object): { password: string } {
 }
 
 function validateReferralCode(bodyObj: object): { referralCode: string } {
-    const Code = APIResponseCode.Error.SignUp.Form.ReferralCode;
+    const Code = APIResCode.Error.SignUp.Form.ReferralCode;
 
     if (!("referralCode" in bodyObj)) {
         throw new APISignUpFormReferralCodeErrorResponse({
@@ -219,9 +219,7 @@ function validateReferralCode(bodyObj: object): { referralCode: string } {
     return { referralCode: referralCode.slice(3) };
 }
 
-export async function POST(
-    req: NextRequest,
-): Promise<APISignUpSuccessResponse | APISignUpErrorResponse | APIErrorResponse> {
+export async function POST(req: NextRequest): Promise<APISignUpSuccessResponse | APISignUpErrorResponse | xAPIErrRes> {
     try {
         const bodyObj = await req.json();
         const { name } = validateName(bodyObj);
@@ -250,7 +248,7 @@ export async function POST(
         console.log(resObj);
         if (!resObj.success) {
             throw new APISignUpErrorResponse(400, {
-                code: APIResponseCode.Error.SignUp.Captcha.CAPTCHA_FAILED,
+                code: APIResCode.Error.SignUp.Captcha.CAPTCHA_FAILED,
                 message: "Captcha validation failed",
             });
         }
@@ -261,7 +259,7 @@ export async function POST(
 
         if (exUser) {
             throw new APISignUpErrorResponse(409, {
-                code: APIResponseCode.Error.SignUp.EMAIL_ALREADY_EXISTS,
+                code: APIResCode.Error.SignUp.EMAIL_ALREADY_EXISTS,
                 message: "User with email already exists",
             });
         }
@@ -273,7 +271,7 @@ export async function POST(
 
             if (!referredByUser) {
                 throw new APISignUpErrorResponse(404, {
-                    code: APIResponseCode.Error.SignUp.REFERRAL_CODE_NOT_FOUND,
+                    code: APIResCode.Error.SignUp.REFERRAL_CODE_NOT_FOUND,
                     message: "Referral code not found",
                 });
             }
@@ -285,7 +283,7 @@ export async function POST(
         const createdAt = new Date();
 
         const id = new ObjectId();
-        const user: MUser = {
+        const user: mUser = {
             _id: id,
             email,
             password: hashedPassword,
@@ -326,8 +324,8 @@ export async function POST(
             return err;
         }
 
-        return new APIErrorResponse(500, {
-            code: APIResponseCode.Error.UNKNOWN_ERROR,
+        return new xAPIErrRes(500, {
+            code: APIResCode.Error.UNKNOWN_ERROR,
             message: "Oops, unknown server error",
         });
     }

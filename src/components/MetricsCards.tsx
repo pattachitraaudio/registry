@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Wallet, Calendar } from "lucide-react";
-import { formatCurrency } from "@/constants";
+import { formatCurrency } from "@/constant";
 
 interface MetricsCardsProps {
     totalClaimableValue: number;

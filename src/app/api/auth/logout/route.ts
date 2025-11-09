@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
+/*
 function validateToken(bodyObj: object): { vfToken: string } {
-    const Code = APIResponseCode.Error.VerifyEmail.VfToken;
+    const Code = APIResCode.Error.VerifyEmail.VfToken;
 
     if (!("vfToken" in bodyObj)) {
         throw new {
@@ -35,6 +36,7 @@ function validateToken(bodyObj: object): { vfToken: string } {
 
     return { vfToken };
 }
+    */
 
 export async function POST() {
     try {

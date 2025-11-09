@@ -1,12 +1,12 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { IUser } from "@/interfaces/IUser";
-import { APIResponseCode } from "@/enums/APIResponseCode";
-import { IAPISessionErrorResponse, IAPISessionSuccessResponse } from "@/interfaces/apiResponses/session";
-import { IAPILoginErrorResponse, IAPILoginSuccessResponse } from "@/interfaces/apiResponses/login";
+import { IUser } from "@/interfaces/IUsersafe";
+import { APIResCode } from "@/enums/APIResCode";
+import { IAPISessionErrorResponse, IAPISessionSuccessResponse } from "@/interfaces/apiResponses/auth/session";
+import { IAPILoginErrorResponse, IAPILoginSuccessResponse } from "@/interfaces/apiResponses/auth/login";
 import { PostLoginRouteHandlerReturnType } from "@/app/api/auth/login/route";
-import { IAPIErrorResponse } from "@/interfaces/apiResponses/iAPIResponse";
+import { iAPIErrRes } from "@/types/apiResponse/xAPIRes";
 
 interface AuthContextType {
     user: IUser | null;
@@ -19,10 +19,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export type GetSessionRouteHandlerReturnType =
-    | IAPISessionSuccessResponse
-    | IAPISessionErrorResponse
-    | IAPIErrorResponse;
+export type GetSessionRouteHandlerReturnType = IAPISessionSuccessResponse | IAPISessionErrorResponse | iAPIErrRes;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<IUser | null>(null);
@@ -38,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const resObj = (await res.json()) as GetSessionRouteHandlerReturnType;
                 console.log("resObj:", resObj);
 
-                if (resObj.code === APIResponseCode.SUCCESS) {
+                if (resObj.code === APIResCode.SUCCESS) {
                     console.log("wow! auth success");
                     setUser(resObj.data.user);
                 }
@@ -66,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // console.log(resObj);
 
             console.log("HEre!!!");
-            if (!(resObj.code === APIResponseCode.SUCCESS)) {
+            if (!(resObj.code === APIResCode.SUCCESS)) {
                 // TODO: If email needs verification, redirect to checkEmail page
                 /*
                 if (data.needsVerification) {

@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { ServiceManager } from "@/classes/xServiceManager";
 import { MailOptions } from "nodemailer/lib/sendmail-transport";
-import { CONSTANTS } from "@/constants";
+import { CONSTANT } from "@/constant";
 
 export async function sendVerificationEmail(email: string, name: string, token: string, expirySeconds: number) {
     const service = await new ServiceManager().setup();
@@ -15,9 +15,9 @@ export async function sendVerificationEmail(email: string, name: string, token: 
     const verificationUrl = `${service.env.APP_URL}/verifyEmail?token=${token}`;
 
     const mailOptions: MailOptions = {
-        from: `${CONSTANTS.appInfo.fullName} <${service.env.SMTP_EMAIL}>`,
+        from: `${CONSTANT.appInfo.fullName} <${service.env.SMTP_EMAIL}>`,
         to: email,
-        subject: `Verify Your Email - ${CONSTANTS.appInfo.fullName} 😃`,
+        subject: `Verify Your Email - ${CONSTANT.appInfo.fullName} 😃`,
         html: `
             <!DOCTYPE html>
             <html>
@@ -65,7 +65,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>Welcome to ${CONSTANTS.appInfo.fullName}!</h1>
+                        <h1>Welcome to ${CONSTANT.appInfo.fullName}!</h1>
                     </div>
                     <div class="content">
                         <p>Hi ${name},</p>
@@ -77,10 +77,10 @@ export async function sendVerificationEmail(email: string, name: string, token: 
                         <p>Or copy and paste this link into your browser:</p>
                         <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
                         <p><strong>This link will expire in ${expirySeconds} seconds.</strong></p>
-                        <p>If you didn't create an account \`${CONSTANTS.appInfo.fullName}\`, please ignore this email.</p>
+                        <p>If you didn't create an account \`${CONSTANT.appInfo.fullName}\`, please ignore this email.</p>
                     </div>
                     <div class="footer">
-                        <p>&copy; ${new Date().getFullYear()} ${CONSTANTS.appInfo.fullName}. All rights reserved.</p>
+                        <p>&copy; ${new Date().getFullYear()} ${CONSTANT.appInfo.fullName}. All rights reserved.</p>
                     </div>
                 </div>
             </body>

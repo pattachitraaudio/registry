@@ -14,7 +14,7 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
-import { formatCurrency, ACCOUNT_VALUE_INR } from "@/constants";
+import { formatCurrency, ACCOUNT_VALUE_INR } from "@/constant";
 
 interface RedeemDialogProps {
     open: boolean;

@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { neoFetch } from "@/neoFetch";
+import { APIResCode } from "@/enums/APIResCode";
 
 function VerifyEmailContent() {
     const router = useRouter();
@@ -23,7 +25,7 @@ function VerifyEmailContent() {
 
         const verifyEmail = async () => {
             try {
-                const response = await fetch("/api/auth/verifyEmail", {
+                const res = await neoFetch("/api/auth/verifyEmail", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -31,17 +33,15 @@ function VerifyEmailContent() {
                     body: JSON.stringify({ vfToken: token }),
                 });
 
-                const data = await response.json();
-
-                if (response.ok) {
+                if (res.code === APIResCode.SUCCESS) {
                     setStatus("success");
-                    setMessage(data.message);
+                    setMessage(res.message);
                     setTimeout(() => {
                         router.push("/login");
                     }, 3000);
                 } else {
                     setStatus("error");
-                    setMessage(data.error || "Verification failed");
+                    setMessage(res.message || "Verification failed");
                 }
             } catch {
                 setStatus("error");
