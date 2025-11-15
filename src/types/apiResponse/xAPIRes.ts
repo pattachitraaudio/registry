@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { APIResponsePhraseMap } from "@/enums/APIResCode";
 
 import type { Delta } from "@/lib/utils";
-import { CONSTANT } from "@/constant";
+import { CONSTANT } from "@/constants/constant";
 
 export type iAPIRes = {
     code: ValueOf<Flatten<typeof APIResCode>> & {};

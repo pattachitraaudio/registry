@@ -1,7 +1,7 @@
 import { MongoClient } from "mongodb";
 import { EnvManager, EnvMap } from "./xEnvManager";
 import { CookieManager } from "./xCookieManager";
-import { CONSTANT } from "@/constant";
+import { CONSTANT } from "@/constants/constant";
 
 interface Service {
     env: EnvMap;

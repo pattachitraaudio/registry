@@ -6,7 +6,7 @@ import { mUser } from "@/models/mUser";
 import { Redemption } from "@/models/Redemption";
 import { ACCOUNT_VALUE_INR } from "@/config/constants";
 
-// POST - Create a new redemption
+// POST - Add a new redemption
 export async function POST(request: Request) {
     try {
         const { userId, accountsToRedeem } = await request.json();
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
         const totalValue = accountsToRedeem * ACCOUNT_VALUE_INR;
 
-        // Create redemption record
+        // Add redemption record
         const newRedemption: Redemption = {
             userId: new ObjectId(userId),
             accountsRedeemed: accountsToRedeem,

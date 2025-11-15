@@ -38,9 +38,18 @@ function validateToken(bodyObj: object): { vfToken: string } {
 }
     */
 
+// TODO: Implement this in the same pattern as others
 export async function POST() {
     try {
-        return NextResponse.json({ message: "Logged out successfully" }, { status: 200 });
+        return NextResponse.json(
+            { message: "Logged out successfully" },
+            {
+                status: 200,
+                headers: {
+                    "Set-Cookie": "jwt=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict",
+                },
+            },
+        );
     } catch (error) {
         console.error("Logout error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

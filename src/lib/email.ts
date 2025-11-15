@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { ServiceManager } from "@/classes/xServiceManager";
 import { MailOptions } from "nodemailer/lib/sendmail-transport";
-import { CONSTANT } from "@/constant";
+import { CONSTANT } from "@/constants/constant";
 
 export async function sendVerificationEmail(email: string, name: string, token: string, expirySeconds: number) {
     const service = await new ServiceManager().setup();

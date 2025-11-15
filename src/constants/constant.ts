@@ -1,7 +1,5 @@
 // Configuration constants for the application
 
-// Account value in Indian Rupees (₹)
-// This can be easily changed to fetch from a database or API in the future
 export const ACCOUNT_VALUE_INR = 2;
 
 // Currency symbol
@@ -13,7 +11,7 @@ export function formatCurrency(value: number): string {
 }
 
 import { execSync } from "node:child_process";
-import packageJSON from "../package.json" with { type: "json" };
+import packageJSON from "../../package.json" with { type: "json" };
 
 function getGitCommitSHA(): string {
     try {

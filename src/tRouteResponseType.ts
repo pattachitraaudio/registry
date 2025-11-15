@@ -39,6 +39,14 @@ type tRouteResponseTypeObject = {
             session: typeof import("@/app/api/auth/session/route");
             resetPassword: typeof import("@/app/api/auth/resetPassword/route");
             resendVfEmail: typeof import("@/app/api/auth/resendVfEmail/route");
+            logout: typeof import("@/app/api/auth/logout/route");
+        };
+        account: {
+            elevenLabs: {
+                get: typeof import("@/app/api/account/elevenLabs/get/route");
+                add: typeof import("@/app/api/account/elevenLabs/add/route");
+                delete: typeof import("@/app/api/account/elevenLabs/delete/route");
+            };
         };
     };
 };

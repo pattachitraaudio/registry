@@ -4,7 +4,7 @@ import { ValueOf, Flatten } from "@/lib/enum";
 import { APIResCode } from "@/enums/APIResCode";
 import { xAPIErrRes, xAPISuccRes, iAPIErrRes, iAPISuccRes } from "@/types/apiResponse/xAPIRes";
 
-import { IUser } from "@/interfaces/iUser";
+import { iUser } from "@/interfaces/iUser";
 
 export interface IAPIVerifyEmailErrorResponse extends iAPIErrRes {
     code: ValueOf<Flatten<typeof APIResCode.Error.VerifyEmail>> & {};
@@ -13,7 +13,7 @@ export interface IAPIVerifyEmailErrorResponse extends iAPIErrRes {
 export interface IAPIVerifyEmailSuccessResponse extends iAPISuccRes {
     code: typeof APIResCode.SUCCESS & {};
     data: {
-        user: IUser;
+        user: iUser;
     };
 }
 

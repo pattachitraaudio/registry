@@ -4,14 +4,14 @@ import type { iAPIErrRes, iAPISuccRes } from "@/types/apiResponse/xAPIRes";
 import { xAPIErrRes, xAPISuccRes } from "@/types/apiResponse/xAPIRes";
 
 import { ValueOf, Flatten } from "@/lib/enum";
-import { IUser } from "@/interfaces/iUser";
+import { iUser } from "@/interfaces/iUser";
 
 export interface IAPISignUpErrorResponse extends iAPIErrRes {
     code: ValueOf<Flatten<typeof APIResCode.Error.SignUp>>;
 }
 
 export interface IAPISignUpSuccessResponse extends iAPISuccRes {
-    data: { user: IUser };
+    data: { user: iUser };
 }
 
 export interface IAPISignUpFormErrorResponse extends IAPISignUpErrorResponse {

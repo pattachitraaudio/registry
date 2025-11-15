@@ -1,17 +1,17 @@
 import { ServiceManager } from "@/classes/xServiceManager";
-import { tElevenLabsUserRes } from "@/schemas/account/sElevenLabsUserResponse";
+import { sElevenLabsUserResSchema, tElevenLabsUserRes } from "@/schemas/account/sElevenLabsUserResponse";
 import "@/types/apiResponse/account/elevenLabs/create";
 
 import { NextRequest, NextResponse } from "next/server";
 import { APIResCode } from "@/enums/APIResCode";
 import {
-    APIAccCreateElevenLabsRes,
-    xAPIAccCreateElevenLabsAPIErrRes,
-    xAPIAccCreateElevenLabsErrRes,
-    xAPIAccCreateElevenLabsFormAPIKeyErrRes,
-    xAPIAccCreateElevenLabsFormEmailErrRes,
-    xAPIAccCreateElevenLabsFormPassErrRes,
-    xAPIAccCreateElevenLabsSuccRes,
+    APIAccAddElevenLabsRes,
+    xAPIAccAddElevenLabsAPIErrRes,
+    xAPIAccAddElevenLabsErrRes,
+    xAPIAccAddElevenLabsFormAPIKeyErrRes,
+    xAPIAccAddElevenLabsFormEmailErrRes,
+    xAPIAccAddElevenLabsFormPassErrRes,
+    xAPIAccAddElevenLabsSuccRes,
 } from "@/types/apiResponse/account/elevenLabs/create";
 
 import { mElevenlabsAccount } from "@/models/account/mElevenlabsAccount";
@@ -22,11 +22,11 @@ import { xAPISessErrRes } from "@/types/apiResponse/auth/session";
 // POST - Add a new account
 
 function validateAPIKey(bodyObj: object): { apiKey: string } {
-    const Code = APIResCode.Error.Account.ElevenLabs.Create.Form.APIKey;
+    const Code = APIResCode.Error.Account.ElevenLabs.Add.Form.APIKey;
     // example: sk_6f2faec1f02da9c79121ac5f1554cba22719ca158f32b292
 
     if (!("apiKey" in bodyObj)) {
-        throw new xAPIAccCreateElevenLabsFormAPIKeyErrRes({
+        throw new xAPIAccAddElevenLabsFormAPIKeyErrRes({
             code: Code.NOT_PRESENT,
             message: "API Key not present",
         });
@@ -35,14 +35,14 @@ function validateAPIKey(bodyObj: object): { apiKey: string } {
     const apiKey = bodyObj.apiKey;
 
     if (typeof apiKey !== "string") {
-        throw new xAPIAccCreateElevenLabsFormAPIKeyErrRes({
+        throw new xAPIAccAddElevenLabsFormAPIKeyErrRes({
             code: Code.NOT_A_STRING,
             message: "API Key must be a string",
         });
     }
 
     if (!apiKey.startsWith("sk_")) {
-        throw new xAPIAccCreateElevenLabsFormAPIKeyErrRes({
+        throw new xAPIAccAddElevenLabsFormAPIKeyErrRes({
             code: Code.INVALID_PREFIX,
             message: "API Key must start with 'sk_'",
         });
@@ -50,7 +50,7 @@ function validateAPIKey(bodyObj: object): { apiKey: string } {
 
     if (apiKey.length !== 51) {
         // sk_ (3 chars) + 48 hex chars = 51 total
-        throw new xAPIAccCreateElevenLabsFormAPIKeyErrRes({
+        throw new xAPIAccAddElevenLabsFormAPIKeyErrRes({
             code: Code.INVALID_LENGTH,
             message: "API Key must be exactly 51 characters (sk_ + 48 hex characters)",
         });
@@ -58,7 +58,7 @@ function validateAPIKey(bodyObj: object): { apiKey: string } {
 
     const hexPart = apiKey.slice(3); // Get everything after "sk_"
     if (!hexPart.match(/^[a-f0-9]{48}$/)) {
-        throw new xAPIAccCreateElevenLabsFormAPIKeyErrRes({
+        throw new xAPIAccAddElevenLabsFormAPIKeyErrRes({
             code: Code.INVALID_FORMAT,
             message: "API Key must contain only lowercase hexadecimal characters (a-f, 0-9) after 'sk_'",
         });
@@ -68,10 +68,10 @@ function validateAPIKey(bodyObj: object): { apiKey: string } {
 }
 
 function validateEmail(bodyObj: object): { email: string } {
-    const Code = APIResCode.Error.Account.ElevenLabs.Create.Form.Email;
+    const Code = APIResCode.Error.Account.ElevenLabs.Add.Form.Email;
 
     if (!("email" in bodyObj)) {
-        throw new xAPIAccCreateElevenLabsFormEmailErrRes({
+        throw new xAPIAccAddElevenLabsFormEmailErrRes({
             code: Code.NOT_PRESENT,
             message: "Email not present",
         });
@@ -80,14 +80,14 @@ function validateEmail(bodyObj: object): { email: string } {
     const email = bodyObj.email;
 
     if (typeof email !== "string") {
-        throw new xAPIAccCreateElevenLabsFormEmailErrRes({
+        throw new xAPIAccAddElevenLabsFormEmailErrRes({
             code: Code.NOT_A_STRING,
             message: "Email must be a string",
         });
     }
 
     if (!email.match(/^[a-z0-9]+@/)) {
-        throw new xAPIAccCreateElevenLabsFormEmailErrRes({
+        throw new xAPIAccAddElevenLabsFormEmailErrRes({
             code: Code.INVALID_USERNAME,
             message:
                 "Email username must contain only letters and numbers (no dots, underscores, or special characters)",
@@ -95,21 +95,21 @@ function validateEmail(bodyObj: object): { email: string } {
     }
 
     if (!email.match(/@[a-z0-9]+\./)) {
-        throw new xAPIAccCreateElevenLabsFormEmailErrRes({
+        throw new xAPIAccAddElevenLabsFormEmailErrRes({
             code: Code.INVALID_DOMAIN_NAME,
             message: "Email domain must contain only letters and numbers (no underscores or special characters)",
         });
     }
 
     if (!email.match(/^[^.]*@[^.]*\.[^.]*$/)) {
-        throw new xAPIAccCreateElevenLabsFormEmailErrRes({
+        throw new xAPIAccAddElevenLabsFormEmailErrRes({
             code: Code.INVALID_DOMAIN_NAME,
             message: "Email must not contain subdomains (format: username@domain.tld)",
         });
     }
 
     if (!email.match(/^[a-z0-9]+@[a-z0-9]+\.[a-z]{2,}$/)) {
-        throw new xAPIAccCreateElevenLabsFormEmailErrRes({
+        throw new xAPIAccAddElevenLabsFormEmailErrRes({
             code: Code.FAILED_TO_VALIDATE_EMAIL,
             message: "Invalid email address",
         });
@@ -118,62 +118,62 @@ function validateEmail(bodyObj: object): { email: string } {
     return { email };
 }
 
-function validatePassword(bodyObj: object): { password: string } {
-    const Code = APIResCode.Error.Account.ElevenLabs.Create.Form.Password;
+function validatePassword(body: object): { password: string } {
+    const Code = APIResCode.Error.Account.ElevenLabs.Add.Form.Password;
 
-    if (!("password" in bodyObj)) {
-        throw new xAPIAccCreateElevenLabsFormPassErrRes({
+    if (!("password" in body)) {
+        throw new xAPIAccAddElevenLabsFormPassErrRes({
             code: Code.NOT_PRESENT,
             message: "Password not present",
         });
     }
 
-    const password = bodyObj.password;
+    const password = body.password;
 
     if (typeof password !== "string") {
-        throw new xAPIAccCreateElevenLabsFormPassErrRes({
+        throw new xAPIAccAddElevenLabsFormPassErrRes({
             code: Code.NOT_A_STRING,
             message: "Password must be a string",
         });
     }
 
     if (password.length < 8) {
-        throw new xAPIAccCreateElevenLabsFormPassErrRes({
+        throw new xAPIAccAddElevenLabsFormPassErrRes({
             code: Code.TOO_SHORT,
             message: "Password must be at least 8 characters long",
         });
     }
 
     if (password.length > 128) {
-        throw new xAPIAccCreateElevenLabsFormPassErrRes({
+        throw new xAPIAccAddElevenLabsFormPassErrRes({
             code: Code.TOO_LONG,
             message: "Password must not exceed 128 characters",
         });
     }
 
     if (!password.match(/[a-z]/)) {
-        throw new xAPIAccCreateElevenLabsFormPassErrRes({
+        throw new xAPIAccAddElevenLabsFormPassErrRes({
             code: Code.MISSING_LOWERCASE,
             message: "Password must contain at least one lowercase letter",
         });
     }
 
     if (!password.match(/[A-Z]/)) {
-        throw new xAPIAccCreateElevenLabsFormPassErrRes({
+        throw new xAPIAccAddElevenLabsFormPassErrRes({
             code: Code.MISSING_UPPERCASE,
             message: "Password must contain at least one uppercase letter",
         });
     }
 
     if (!password.match(/[0-9]/)) {
-        throw new xAPIAccCreateElevenLabsFormPassErrRes({
+        throw new xAPIAccAddElevenLabsFormPassErrRes({
             code: Code.MISSING_NUMBER,
             message: "Password must contain at least one number",
         });
     }
 
     if (!password.match(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/)) {
-        throw new xAPIAccCreateElevenLabsFormPassErrRes({
+        throw new xAPIAccAddElevenLabsFormPassErrRes({
             code: Code.MISSING_SPECIAL_CHARACTER,
             message: "Password must contain at least one special character",
         });
@@ -183,49 +183,50 @@ function validatePassword(bodyObj: object): { password: string } {
 }
 
 // export async function POST(request: Request): Promise<NextResponse<ErrorResponse> | NextResponse<SuccessResponse>> {
-export async function POST(req: NextRequest): Promise<xAPIErrRes | xAPISessErrRes | APIAccCreateElevenLabsRes> {
-    const ErrorCode = APIResCode.Error.Account.ElevenLabs.Create;
+export async function POST(req: NextRequest): Promise<xAPIErrRes | xAPISessErrRes | APIAccAddElevenLabsRes> {
+    const ErrorCode = APIResCode.Error.Account.ElevenLabs.Add;
     try {
-        const cookieManager = (await new ServiceManager().setup()).cookieManager;
+        const service = await new ServiceManager().setup();
+        const cookieManager = service.cookieManager;
         const cookie = req.cookies.get(cookieManager.name)?.value;
         const sessionPayload = cookieManager.verify(cookie);
         const userID = (await sessionPayload).id;
 
-        const bodyObj = await req.json();
+        const body = await req.json();
 
-        const { apiKey } = validateAPIKey(bodyObj);
-        const { email } = validateEmail(bodyObj);
-        const { password } = validatePassword(bodyObj);
+        const { apiKey } = validateAPIKey(body);
+        const { email } = validateEmail(body);
+        const { password } = validatePassword(body);
 
         let elevenLabsResObj: tElevenLabsUserRes;
 
         try {
-            const elevenLabsRes = await fetch("https://api.elevenlabs.io/v1/user", {
+            const elevenLabsRes = await fetch(`${service.env.ELEVEN_LABS_API_URL}/user`, {
                 headers: {
                     "xi-api-key": apiKey,
                 },
             });
 
             if (elevenLabsRes.status === 200) {
-                elevenLabsResObj = (await elevenLabsRes.json()) as tElevenLabsUserRes;
+                elevenLabsResObj = sElevenLabsUserResSchema.parse(await elevenLabsRes.json());
             } else if (elevenLabsRes.status === 401) {
-                return new xAPIAccCreateElevenLabsAPIErrRes(400, {
+                return new xAPIAccAddElevenLabsAPIErrRes(400, {
                     code: ErrorCode.ElevenLabsAPI.INVALID_API_KEY,
                     message: "Looks like the API key is invalid, since Elevenlabs returned a 401 status code",
                 });
             } else if (elevenLabsRes.status === 422) {
-                return new xAPIAccCreateElevenLabsAPIErrRes(500, {
+                return new xAPIAccAddElevenLabsAPIErrRes(500, {
                     code: ErrorCode.ElevenLabsAPI.UNPROCESSABLE_ENTITY,
                     message: "Unprocessable entity err from Elevenlabs",
                 });
             } else {
-                return new xAPIAccCreateElevenLabsAPIErrRes(500, {
+                return new xAPIAccAddElevenLabsAPIErrRes(500, {
                     code: ErrorCode.ElevenLabsAPI.UNKNOWN,
                     message: "Unknown err from elevenlabs",
                 });
             }
         } catch (err) {
-            return new xAPIAccCreateElevenLabsAPIErrRes(500, {
+            return new xAPIAccAddElevenLabsAPIErrRes(500, {
                 code: ErrorCode.ElevenLabsAPI.UNKNOWN,
                 message: "Unknown err from elevenlabs",
             });
@@ -275,7 +276,6 @@ export async function POST(req: NextRequest): Promise<xAPIErrRes | xAPISessErrRe
 
         */
 
-        const service = await new ServiceManager().setup();
         const accountDB = service.mongoDBClient.db("accounts");
         const elevenlabsAccountCollection = accountDB.collection<mElevenlabsAccount>("elevenLabs");
 
@@ -286,7 +286,7 @@ export async function POST(req: NextRequest): Promise<xAPIErrRes | xAPISessErrRe
         });
 
         if (existingAccount) {
-            return new xAPIAccCreateElevenLabsErrRes(409, {
+            return new xAPIAccAddElevenLabsErrRes(409, {
                 code: ErrorCode.ACCOUNT_ID_ALREADY_EXISTS,
                 message: "Account with this elevenlabs id (" + elevenLabsID + ") already exists",
             });
@@ -310,13 +310,31 @@ export async function POST(req: NextRequest): Promise<xAPIErrRes | xAPISessErrRe
             });
         }
 
-        return new xAPIAccCreateElevenLabsSuccRes({
+        return new xAPIAccAddElevenLabsSuccRes({
             code: APIResCode.SUCCESS,
             message: "Hurray... You just made a contribution",
             data: elevenLabsResObj,
         });
     } catch (err) {
+        if (err instanceof xAPIErrRes) {
+            return err;
+        }
+
         console.error("Add account error:", err);
         return new xAPIErrRes(500, { code: APIResCode.Error.UNKNOWN_ERROR, message: "Internal server error" });
     }
 }
+
+const obj = {
+    id: "<userID>",
+    apiKey: "<apiKey>",
+    credits: {
+        available: 500,
+        limit: 10000,
+    },
+    voiceSlots: {
+        available: 2,
+        limit: 3,
+    },
+    createdAt: new Date(),
+};

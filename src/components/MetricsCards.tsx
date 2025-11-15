@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Wallet, Calendar } from "lucide-react";
-import { formatCurrency } from "@/constant";
+import { formatCurrency } from "@/constants/constant";
 
 interface MetricsCardsProps {
     totalClaimableValue: number;
@@ -31,7 +31,7 @@ export function MetricsCards({ totalClaimableValue, currentMonthAccounts, accoun
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{currentMonthAccounts}</div>
-                    <p className="text-xs text-neutral-500 mt-1">Created in current month</p>
+                    <p className="text-xs text-neutral-500 mt-1">Addd in current month</p>
                 </CardContent>
             </Card>
 

@@ -3,12 +3,12 @@ import type { iAPIErrRes, iAPISuccRes } from "@/types/apiResponse/xAPIRes";
 import { xAPIErrRes, xAPISuccRes } from "@/types/apiResponse/xAPIRes";
 import { APIResCode } from "@/enums/APIResCode";
 
-// import { IUser } from "../../IUser";
-import { IUser } from "@/interfaces/iUser";
+// import { iUser } from "../../iUser";
+import { iUser } from "@/interfaces/iUser";
 import { ValueOf, Flatten } from "@/lib/enum";
 
 export interface IAPILoginSuccessResponse extends iAPISuccRes {
-    data: { user: IUser };
+    data: { user: iUser };
 }
 
 export interface IAPILoginErrorResponse extends iAPIErrRes {

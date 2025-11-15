@@ -42,7 +42,7 @@ export const sElevenLabsUserResSchema = z
             })),
         is_new_user: z.boolean(),
         is_onboarding_completed: z.literal(true),
-        is_onboarding_checklist_completed: z.literal(true),
+        is_onboarding_checklist_completed: z.boolean(),
         first_name: z.string().nullable(),
         created_at: z.number(),
     })

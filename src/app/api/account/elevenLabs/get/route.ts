@@ -15,11 +15,13 @@ export async function GET(req: NextRequest): Promise<xAPISessJWTErrRes | xAPISes
         const mongoDBClient = service.mongoDBClient;
 
         const accounts = await mongoDBClient
-            .db("account")
+            .db("accounts")
             .collection<mElevenlabsAccount>("elevenLabs")
             .find({ createdByUserID: ObjectId.createFromHexString(sessionPayload.id) })
             .sort({ createdAt: -1 })
             .toArray();
+
+        // console.log("accounts: ", accounts);
 
         return new xAPIAccGetElevenLabsSuccRes({
             code: APIResCode.SUCCESS,

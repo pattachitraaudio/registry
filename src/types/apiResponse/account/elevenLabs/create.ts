@@ -4,115 +4,115 @@ import { Flatten, ValueOf } from "@/lib/enum";
 import { Delta } from "@/lib/utils";
 import { tElevenLabsUserRes } from "@/schemas/account/sElevenLabsUserResponse";
 
-type AccCreateResCode = typeof APIResCode.Error.Account.ElevenLabs.Create;
+type AccAddResCode = typeof APIResCode.Error.Account.ElevenLabs.Add;
 
-export interface iAPIAccCreateElevenLabsSuccRes extends iAPISuccRes {
+export interface iAPIAccAddElevenLabsSuccRes extends iAPISuccRes {
     data: tElevenLabsUserRes;
 }
 
-export interface iAPIAccCreateElevenLabsErrRes extends iAPIErrRes {
-    code: ValueOf<Flatten<AccCreateResCode>>;
+export interface iAPIAccAddElevenLabsErrRes extends iAPIErrRes {
+    code: ValueOf<Flatten<AccAddResCode>>;
 }
 
-type AccCreateFormErrResCode = AccCreateResCode["Form"];
+type AccAddFormErrResCode = AccAddResCode["Form"];
 
-export interface iAPIAccCreateElevenLabsFormErrRes extends iAPIAccCreateElevenLabsErrRes {
-    code: ValueOf<Flatten<AccCreateFormErrResCode>>;
+export interface iAPIAccAddElevenLabsFormErrRes extends iAPIAccAddElevenLabsErrRes {
+    code: ValueOf<Flatten<AccAddFormErrResCode>>;
 }
 
-export interface iAPIAccCreateElevenLabsFormEmailErrRes extends iAPIAccCreateElevenLabsFormErrRes {
-    code: ValueOf<Flatten<AccCreateFormErrResCode["Email"]>>;
+export interface iAPIAccAddElevenLabsFormEmailErrRes extends iAPIAccAddElevenLabsFormErrRes {
+    code: ValueOf<Flatten<AccAddFormErrResCode["Email"]>>;
 }
 
-export interface iAPIAccCreateElevenLabsFormPassErrRes extends iAPIAccCreateElevenLabsFormErrRes {
-    code: ValueOf<Flatten<AccCreateFormErrResCode["Password"]>>;
+export interface iAPIAccAddElevenLabsFormPassErrRes extends iAPIAccAddElevenLabsFormErrRes {
+    code: ValueOf<Flatten<AccAddFormErrResCode["Password"]>>;
 }
 
-export interface iAPIAccCreateElevenLabsFormAPIKeyErrRes extends iAPIAccCreateElevenLabsFormErrRes {
-    code: ValueOf<Flatten<AccCreateFormErrResCode["APIKey"]>>;
+export interface iAPIAccAddElevenLabsFormAPIKeyErrRes extends iAPIAccAddElevenLabsFormErrRes {
+    code: ValueOf<Flatten<AccAddFormErrResCode["APIKey"]>>;
 }
 
-export interface iAPIAccCreateElevenLabsAPIErrRes extends iAPIAccCreateElevenLabsErrRes {}
+export interface iAPIAccAddElevenLabsAPIErrRes extends iAPIAccAddElevenLabsErrRes {}
 
-export class xAPIAccCreateElevenLabsSuccRes<
-    T extends iAPIAccCreateElevenLabsSuccRes = iAPIAccCreateElevenLabsSuccRes,
+export class xAPIAccAddElevenLabsSuccRes<
+    T extends iAPIAccAddElevenLabsSuccRes = iAPIAccAddElevenLabsSuccRes,
 > extends xAPISuccRes<T> {
     constructor(body: Delta<iAPISuccRes, T> & ConstructorParameters<typeof xAPISuccRes<T>>[2]) {
         super(201, [], body);
     }
 }
 
-export class xAPIAccCreateElevenLabsErrRes<
-    T extends iAPIAccCreateElevenLabsErrRes = iAPIAccCreateElevenLabsErrRes,
+export class xAPIAccAddElevenLabsErrRes<
+    T extends iAPIAccAddElevenLabsErrRes = iAPIAccAddElevenLabsErrRes,
 > extends xAPIErrRes<T> {
     constructor(
         statusCode: number,
-        body: Delta<iAPIErrRes, iAPIAccCreateElevenLabsErrRes> & ConstructorParameters<typeof xAPIErrRes<T>>[1],
+        body: Delta<iAPIErrRes, iAPIAccAddElevenLabsErrRes> & ConstructorParameters<typeof xAPIErrRes<T>>[1],
     ) {
         super(statusCode, body);
     }
 }
 
-export class xAPIAccCreateElevenLabsFormErrRes<
-    T extends iAPIAccCreateElevenLabsFormErrRes = iAPIAccCreateElevenLabsFormErrRes,
-> extends xAPIAccCreateElevenLabsErrRes<T> {
+export class xAPIAccAddElevenLabsFormErrRes<
+    T extends iAPIAccAddElevenLabsFormErrRes = iAPIAccAddElevenLabsFormErrRes,
+> extends xAPIAccAddElevenLabsErrRes<T> {
     constructor(
-        bodyObject: Delta<iAPIErrRes, iAPIAccCreateElevenLabsFormErrRes> &
-            ConstructorParameters<typeof xAPIAccCreateElevenLabsErrRes<T>>[1],
+        bodyObject: Delta<iAPIErrRes, iAPIAccAddElevenLabsFormErrRes> &
+            ConstructorParameters<typeof xAPIAccAddElevenLabsErrRes<T>>[1],
     ) {
         super(400, bodyObject);
     }
 }
 
-export class xAPIAccCreateElevenLabsFormEmailErrRes<
-    T extends iAPIAccCreateElevenLabsFormEmailErrRes = iAPIAccCreateElevenLabsFormEmailErrRes,
-> extends xAPIAccCreateElevenLabsFormErrRes<T> {
+export class xAPIAccAddElevenLabsFormEmailErrRes<
+    T extends iAPIAccAddElevenLabsFormEmailErrRes = iAPIAccAddElevenLabsFormEmailErrRes,
+> extends xAPIAccAddElevenLabsFormErrRes<T> {
     constructor(
-        bodyObject: Delta<iAPIAccCreateElevenLabsFormErrRes, iAPIAccCreateElevenLabsFormErrRes> &
-            ConstructorParameters<typeof xAPIAccCreateElevenLabsFormErrRes<T>>[0],
+        bodyObject: Delta<iAPIAccAddElevenLabsFormErrRes, iAPIAccAddElevenLabsFormErrRes> &
+            ConstructorParameters<typeof xAPIAccAddElevenLabsFormErrRes<T>>[0],
     ) {
         super(bodyObject);
     }
 }
 
-export class xAPIAccCreateElevenLabsFormPassErrRes<
-    T extends iAPIAccCreateElevenLabsFormPassErrRes = iAPIAccCreateElevenLabsFormPassErrRes,
-> extends xAPIAccCreateElevenLabsFormErrRes<T> {
+export class xAPIAccAddElevenLabsFormPassErrRes<
+    T extends iAPIAccAddElevenLabsFormPassErrRes = iAPIAccAddElevenLabsFormPassErrRes,
+> extends xAPIAccAddElevenLabsFormErrRes<T> {
     constructor(
-        bodyObject: Delta<iAPIAccCreateElevenLabsFormErrRes, iAPIAccCreateElevenLabsFormPassErrRes> &
-            ConstructorParameters<typeof xAPIAccCreateElevenLabsFormErrRes<T>>[0],
+        bodyObject: Delta<iAPIAccAddElevenLabsFormErrRes, iAPIAccAddElevenLabsFormPassErrRes> &
+            ConstructorParameters<typeof xAPIAccAddElevenLabsFormErrRes<T>>[0],
     ) {
         super(bodyObject);
     }
 }
 
-export class xAPIAccCreateElevenLabsFormAPIKeyErrRes<
-    T extends iAPIAccCreateElevenLabsFormAPIKeyErrRes = iAPIAccCreateElevenLabsFormAPIKeyErrRes,
-> extends xAPIAccCreateElevenLabsFormErrRes<T> {
+export class xAPIAccAddElevenLabsFormAPIKeyErrRes<
+    T extends iAPIAccAddElevenLabsFormAPIKeyErrRes = iAPIAccAddElevenLabsFormAPIKeyErrRes,
+> extends xAPIAccAddElevenLabsFormErrRes<T> {
     constructor(
-        bodyObject: Delta<iAPIAccCreateElevenLabsFormErrRes, iAPIAccCreateElevenLabsFormAPIKeyErrRes> &
-            ConstructorParameters<typeof xAPIAccCreateElevenLabsFormErrRes<T>>[0],
+        bodyObject: Delta<iAPIAccAddElevenLabsFormErrRes, iAPIAccAddElevenLabsFormAPIKeyErrRes> &
+            ConstructorParameters<typeof xAPIAccAddElevenLabsFormErrRes<T>>[0],
     ) {
         super(bodyObject);
     }
 }
 
-export class xAPIAccCreateElevenLabsAPIErrRes<
-    T extends iAPIAccCreateElevenLabsAPIErrRes = iAPIAccCreateElevenLabsAPIErrRes,
-> extends xAPIAccCreateElevenLabsErrRes<T> {
+export class xAPIAccAddElevenLabsAPIErrRes<
+    T extends iAPIAccAddElevenLabsAPIErrRes = iAPIAccAddElevenLabsAPIErrRes,
+> extends xAPIAccAddElevenLabsErrRes<T> {
     constructor(
         statusCode: number,
-        bodyObject: Delta<iAPIAccCreateElevenLabsErrRes, iAPIAccCreateElevenLabsAPIErrRes> &
-            ConstructorParameters<typeof xAPIAccCreateElevenLabsErrRes<T>>[1],
+        bodyObject: Delta<iAPIAccAddElevenLabsErrRes, iAPIAccAddElevenLabsAPIErrRes> &
+            ConstructorParameters<typeof xAPIAccAddElevenLabsErrRes<T>>[1],
     ) {
         super(statusCode, bodyObject);
     }
 }
 
-export type APIAccCreateElevenLabsRes =
-    | xAPIAccCreateElevenLabsErrRes
-    | xAPIAccCreateElevenLabsAPIErrRes
-    | xAPIAccCreateElevenLabsFormAPIKeyErrRes
-    | xAPIAccCreateElevenLabsFormEmailErrRes
-    | xAPIAccCreateElevenLabsFormPassErrRes
-    | xAPIAccCreateElevenLabsSuccRes;
+export type APIAccAddElevenLabsRes =
+    | xAPIAccAddElevenLabsErrRes
+    | xAPIAccAddElevenLabsAPIErrRes
+    | xAPIAccAddElevenLabsFormAPIKeyErrRes
+    | xAPIAccAddElevenLabsFormEmailErrRes
+    | xAPIAccAddElevenLabsFormPassErrRes
+    | xAPIAccAddElevenLabsSuccRes;

@@ -1,5 +1,5 @@
 import { ValueOf, Flatten } from "@/lib/enum";
-import { IUser } from "@/interfaces/iUser";
+import { iUser } from "@/interfaces/iUser";
 import { iAPIErrRes, iAPISuccRes } from "../xAPIRes";
 import { APIResCode } from "@/enums/APIResCode";
 

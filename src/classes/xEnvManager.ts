@@ -13,6 +13,7 @@ const envSchema = z
         JWT_SECRET: z.string().min(1, "JWT secret is required"),
         ROOT_REFERRAL_CODE: z.string().min(1, "Root referral code is required"),
         ENV_TYPE: z.enum(["dev", "testing", "production", "staging"] as const),
+        ELEVEN_LABS_API_URL: z.string(),
     })
     .refine(
         (data) => {
