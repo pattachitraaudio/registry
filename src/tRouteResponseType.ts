@@ -43,9 +43,9 @@ type tRouteResponseTypeObject = {
         };
         account: {
             elevenLabs: {
-                get: typeof import("@/app/api/account/elevenLabs/get/route");
-                add: typeof import("@/app/api/account/elevenLabs/add/route");
-                delete: typeof import("@/app/api/account/elevenLabs/delete/route");
+                get: typeof import("@/app/api/pool/elevenLabs/get/route");
+                add: typeof import("@/app/api/pool/elevenLabs/add/route");
+                delete: typeof import("@/app/api/pool/elevenLabs/delete/route");
             };
         };
     };
