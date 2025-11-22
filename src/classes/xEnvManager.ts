@@ -22,7 +22,7 @@ const envSchema = z
             return hasNextPublicAppURL !== hasVercelURL;
         },
         {
-            message: "Exactly one of NEXT_PUBLIC_APP_URL or VERCEL_URL must be provided (not both, not neither)",
+            message: "Exactly one of 'NEXT_PUBLIC_APP_URL' or 'VERCEL_URL' must be provided (not both, not neither)",
             path: ["NEXT_PUBLIC_APP_URL"],
         },
     )
@@ -51,14 +51,14 @@ class EnvManager {
         this.setupPromise = (async () => {
             try {
                 const result = await envSchema.parseAsync(process.env);
-                console.log("✓ Environment variables validated successfully");
+                console.log("Environment variables validated successfully");
                 return result;
             } catch (err) {
                 if (err instanceof z.ZodError) {
-                    console.error("❌ Environment validation failed:");
+                    console.error("Environment validation failed:");
                     // console.error(JSON.stringify(z.treeifyError(err), null, 4));
                 } else {
-                    console.error("❌ Unexpected error during environment validation:", err);
+                    console.error("Unexpected error during environment validation:", err);
                 }
 
                 throw err;
