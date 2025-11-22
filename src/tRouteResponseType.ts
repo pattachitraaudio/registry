@@ -52,7 +52,7 @@ type tRouteResponseTypeObject = {
 };
 
 type HTTPMethodKeyObject = {
-    [K in "GET" | "POST" | "PUT" | "PATCH" | "DELETE"]?: Function;
+    [K in "GET" | "POST" | "PUT" | "PATCH" | "DELETE"]?: (req: NextRequest) => unknown;
 };
 
 type RecursiveObjectType = {
