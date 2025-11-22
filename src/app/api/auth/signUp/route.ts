@@ -202,7 +202,7 @@ function validateReferralCode(bodyObj: object): { referralCode: string } {
 
     const referralCode = bodyObj.referralCode.toUpperCase();
 
-    if (referralCode.length !== 15) {
+    if (referralCode.length !== 15 && referralCode.length !== 35) {
         throw new APISignUpFormReferralCodeErrorResponse({
             code: Code.INVALID_REFERRAL_CODE_LENGTH,
             message: "Referral code must be exactly 15 characters",
