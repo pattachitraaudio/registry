@@ -14,14 +14,14 @@ import { ServiceManager } from "@/classes/xServiceManager";
 import { mUser } from "@/models/mUser";
 import { NextRequest, NextResponse } from "next/server";
 
-function validateEmail(bodyObj: object): { email: string } {
+function validateEmail(body: object): { email: string } {
     const Code = APIResCode.Error.Login.Form.Email;
 
-    if (!("email" in bodyObj)) {
+    if (!("email" in body)) {
         throw new APILoginFormEmailErrorResponse({ code: Code.EMAIL_NOT_PRESENT, message: "Email not present" });
     }
 
-    const email = bodyObj.email;
+    const email = body.email;
 
     if (typeof email !== "string") {
         throw new APILoginFormEmailErrorResponse({ code: Code.EMAIL_NOT_A_STRING, message: "Email must be a string" });
@@ -59,17 +59,17 @@ function validateEmail(bodyObj: object): { email: string } {
     return { email };
 }
 
-function validatePassword(bodyObj: object): { password: string } {
+function validatePassword(body: object): { password: string } {
     const Code = APIResCode.Error.Login.Form.Password;
 
-    if (!("password" in bodyObj)) {
+    if (!("password" in body)) {
         throw new APILoginFormPasswordErrorResponse({
             code: Code.PASSWORD_NOT_PRESENT,
             message: "Password is required",
         });
     }
 
-    const password = bodyObj.password;
+    const password = body.password;
 
     if (typeof password !== "string") {
         throw new APILoginFormPasswordErrorResponse({
@@ -129,10 +129,10 @@ export async function POST(
     request: NextRequest,
 ): Promise<APILoginSuccessResponse | APILoginErrorResponse | xAPIErrRes> {
     try {
-        const bodyObj = await request.json();
+        const body = await request.json();
 
-        const { email } = validateEmail(bodyObj);
-        const { password } = validatePassword(bodyObj);
+        const { email } = validateEmail(body);
+        const { password } = validatePassword(body);
 
         // const users = Globals.mongoDB.users();
         const userCollection = (await new ServiceManager().setup()).mongoDBClient
