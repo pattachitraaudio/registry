@@ -11,13 +11,10 @@ import { useAuth } from "@/contexts/AuthContext";
 // import { LoginResponse } from "@/interfaces/APIResponses/LoginResponse";
 
 export default function LoginPage() {
-    console.log("[[LoginPage]]");
     const router = useRouter();
     const { user, login, authLoading, authError } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    // const [error, setError] = useState("");
-    // const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         // Redirect if already logged in
