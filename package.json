@@ -8,7 +8,7 @@
         "url": ""
     },
     "scripts": {
-        "dev": "next dev --hostname registry.pattachitraaudio.sbs --port 80",
+        "dev": "next dev --hostname dev.registry.pattachitraaudio.sbs --port 80",
         "build": "next build",
         "start": "next start",
         "lint": "eslint",
