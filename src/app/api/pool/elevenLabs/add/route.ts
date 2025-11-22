@@ -2,7 +2,7 @@ import { ServiceManager } from "@/classes/xServiceManager";
 import { sElevenLabsUserResSchema, tElevenLabsUserRes } from "@/schemas/account/sElevenLabsUserResponse";
 import "@/types/apiResponse/account/elevenLabs/create";
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { APIResCode } from "@/enums/APIResCode";
 import {
     APIAccAddElevenLabsRes,
@@ -201,7 +201,7 @@ export async function POST(req: NextRequest): Promise<xAPIErrRes | xAPISessErrRe
         let elevenLabsResObj: tElevenLabsUserRes;
 
         try {
-            const elevenLabsRes = await fetch(`${service.env.ELEVEN_LABS_API_URL}/user`, {
+            const elevenLabsRes = await fetch(`${service.env.NEXT_PUBLIC_ELEVEN_LABS_API_URL}/user`, {
                 headers: {
                     "xi-api-key": apiKey,
                 },
