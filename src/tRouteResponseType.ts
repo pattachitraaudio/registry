@@ -89,8 +89,6 @@ export type GetResponseType<
     Method extends keyof APIRoute[Path],
 > = APIRoute[Path][Method] extends RouteHandlerType ? RouteHandlerReturnType<APIRoute[Path][Method]> : never;
 
-type Res = GetResponseType<"/api/auth/signUp", "POST">;
-type Res2 = GetResponseType<"/api/auth/login", "POST">;
 /*
 type AB = {
     "api/auth/signUp": ["POST"];
