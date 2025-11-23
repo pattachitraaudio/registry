@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { mUser } from "@/models/mUser";
+import { mUser } from "@/lib/db/models/mUser";
 import { sendVerificationEmail } from "@/lib/email";
 import { APIResCode } from "@/enums/APIResCode";
 import { ObjectId } from "mongodb";

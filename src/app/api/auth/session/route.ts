@@ -6,7 +6,7 @@ import { xAPISessSuccRes, xAPISessErrRes, tAPISessRes } from "@/types/apiRespons
 
 import { xAPIErrRes } from "@/types/apiResponse/xAPIRes";
 import { ServiceManager } from "@/classes/xServiceManager";
-import { mUser } from "@/models/mUser";
+import { mUser } from "@/lib/db/models/mUser";
 
 export async function GET(req: NextRequest): Promise<tAPISessRes> {
     const Code = APIResCode.Error.Session;

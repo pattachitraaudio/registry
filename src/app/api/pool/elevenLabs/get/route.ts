@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { APIAccGetElevenLabsRes, xAPIAccGetElevenLabsSuccRes } from "@/types/apiResponse/account/elevenLabs/get";
 import { ServiceManager } from "@/classes/xServiceManager";
-import { mElevenlabsAccount } from "@/models/account/mElevenlabsAccount";
+import { mElevenlabsAccount } from "@/lib/db/models/account/mElevenlabsAccount";
 import { xAPIErrRes } from "@/types/apiResponse/xAPIRes";
 import { APIResCode } from "@/enums/APIResCode";
 import { xAPISessErrRes, xAPISessJWTErrRes } from "@/types/apiResponse/auth/session";

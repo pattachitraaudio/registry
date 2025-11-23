@@ -14,7 +14,7 @@ import {
     xAPIAccAddElevenLabsSuccRes,
 } from "@/types/apiResponse/account/elevenLabs/create";
 
-import { mElevenlabsAccount } from "@/models/account/mElevenlabsAccount";
+import { mElevenlabsAccount } from "@/lib/db/models/account/mElevenlabsAccount";
 import { ObjectId } from "mongodb";
 import { xAPIErrRes } from "@/types/apiResponse/xAPIRes";
 import { xAPISessErrRes } from "@/types/apiResponse/auth/session";

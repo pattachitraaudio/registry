@@ -11,7 +11,7 @@ import {
 } from "@/types/apiResponse/auth/login";
 
 import { ServiceManager } from "@/classes/xServiceManager";
-import { mUser } from "@/models/mUser";
+import { mUser } from "@/lib/db/models/mUser";
 import { NextRequest, NextResponse } from "next/server";
 
 function validateEmail(body: object): { email: string } {
@@ -134,7 +134,6 @@ export async function POST(
         const { email } = validateEmail(body);
         const { password } = validatePassword(body);
 
-        // const users = Globals.mongoDB.users();
         const userCollection = (await new ServiceManager().setup()).mongoDBClient
             .db("registry")
             .collection<mUser>("users");

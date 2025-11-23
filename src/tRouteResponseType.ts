@@ -6,27 +6,6 @@ type RouteHandlerReturnTypeHelper<T> = T extends NextResponse<infer Y> ? Y : nev
 type RouteHandlerReturnType<T extends (req: NextRequest) => unknown, U = ReturnType<T>> =
     U extends Promise<infer X> ? RouteHandlerReturnTypeHelper<X> : never;
 
-/*
-type tRouteResponseTypeObject = {
-    api: {
-        auth: {
-            signUp: {
-                // POST: RouteHandlerReturnType<typeof import("@/app/api/auth/signUp/route").POST>;
-                POST: typeof import("@/app/api/auth/signUp/route").POST;
-            };
-            verifyEmail: {};
-            login: {
-                // POST: RouteHandlerReturnType<typeof import("@/app/api/auth/login/route").POST>;
-                POST: typeof import("@/app/api/auth/login/route").POST;
-            };
-            session: {};
-            resetPassword: {};
-            resendVfEmail: {};
-        };
-    };
-};
-*/
-
 type Obj<T> = {
     [K in keyof T]: T[K];
 } & {};
@@ -59,13 +38,6 @@ type RecursiveObjectType = {
     [key: string]: HTTPMethodKeyObject | RecursiveObjectType;
 };
 
-/*
-type ABC = typeof import("@/app/api/auth/signUp/route");
-
-
-type ObjABC = Obj<ABC>;
-*/
-
 type __XYA<T extends RecursiveObjectType, Prefix extends string = ""> = {
     [K in keyof T]: T[K] extends HTTPMethodKeyObject
         ? Prefix extends ""
@@ -83,49 +55,8 @@ type AppendPrefixToObjectKeys<O extends object, Prefix extends string> = {
 type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 
 export type APIRoute = Obj<UnionToIntersection<AppendPrefixToObjectKeys<__XYA<tRouteResponseTypeObject>, "/">>>;
-// type X = AB["/api/auth/signUp"]["POST"]
+
 export type GetResponseType<
     Path extends keyof APIRoute,
     Method extends keyof APIRoute[Path],
 > = APIRoute[Path][Method] extends RouteHandlerType ? RouteHandlerReturnType<APIRoute[Path][Method]> : never;
-
-/*
-type AB = {
-    "api/auth/signUp": ["POST"];
-} | {
-    "api/auth/login": ["POST"];
-}
-*/
-// export type tRouteResponseType<Route> =
-
-// type HasSlash
-// type H<Str extends string> = Str extends `${infer First extends string}/${infer Rest extends string}` ? First : never;
-/*
-type Attribute<T extends `/${string}`> = T extends `/${infer X extends string}` ? X : never;
-
-type TraverseObject<
-    O extends object,
-    Path extends `/${string}`,
-> = Path extends `/${infer First extends string}/${infer Rest extends string}`
-    ? First extends keyof O
-        ? O[First] extends object
-            ? TraverseObject<O[First], `/${Rest}`>
-            : never
-        : never
-    : Path extends "/"
-      ? O
-      : Attribute<Path> extends keyof O
-        ? O[Attribute<Path>]
-        : never;
-
-// type X = H<"hello/world">;
-type D = TraverseObject<tRouteResponseTypeObject, "/api/auth/signUp">;
-
-*/
-// fetch("", {method:})
-// Http2ServerRequest()
-// function httpReq()
-
-// type X = "" extends "" ? true : false;
-
-// export type tRouteResponse<Path extends `/${string}`, Method extends >

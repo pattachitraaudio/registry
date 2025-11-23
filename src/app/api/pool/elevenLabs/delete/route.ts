@@ -1,6 +1,6 @@
 import { ServiceManager } from "@/classes/xServiceManager";
 import { APIResCode } from "@/enums/APIResCode";
-import { mElevenlabsAccount } from "@/models/account/mElevenlabsAccount";
+import { mElevenlabsAccount } from "@/lib/db/models/account/mElevenlabsAccount";
 import {
     APIAccDeleteElevenLabsRes,
     xAPIAccDeleteElevenLabsErrRes,

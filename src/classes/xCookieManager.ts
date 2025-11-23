@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import { mUser } from "@/models/mUser";
+import { mUser } from "@/lib/db/models/mUser";
 import { JOSEError } from "jose/errors";
 import { xAPISessErrRes, xAPISessJWTErrRes } from "@/types/apiResponse/auth/session";
 import { APIResCode } from "@/enums/APIResCode";
