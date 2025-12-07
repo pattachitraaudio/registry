@@ -4,7 +4,7 @@ import { Flatten, ValueOf } from "@/lib/enum";
 import { NextResponse } from "next/server";
 import { APIResponsePhraseMap } from "@/enums/APIResCode";
 
-import type { Delta } from "@/lib/utils";
+import type { Delta } from "@/lib/util";
 import { CONSTANT } from "@/constants/constant";
 
 export type iAPIRes = {

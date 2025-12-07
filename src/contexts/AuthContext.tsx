@@ -1,14 +1,14 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { APIResCode } from "@/enums/APIResCode";
-import { iUser } from "@/interfaces/iUser";
-import { neoFetch } from "@/neoFetch";
+import { neoFetch } from "@/lib/neoFetch";
+import { validateSessionReqBodyJSON } from "@/app/api/auth/session/validator";
+import { iSessionPayload } from "@/lib/session";
 
 interface AuthContextType {
-    user: iUser | null;
-    login: (email: string, password: string) => Promise<void>;
-    logout: () => Promise<void>;
+    sessionPayload: iSessionPayload | null;
+    // login: (email: string, password: string) => Promise<void>;
+    // logout: () => Promise<void>;
     authLoading: boolean;
     authError: string;
 }
@@ -16,64 +16,42 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<iUser | null>(null);
+    const [sessionPayload, setSessionPayload] = useState<iSessionPayload | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+
+    const [err, setErr] = useState("");
 
     useEffect(() => {
         (async function () {
             setLoading(true);
+
             try {
-                const res = await neoFetch("/api/auth/session", {
+                const jsonBodyValidationResult = await validateSessionReqBodyJSON({}, {} as iSessionPayload);
+
+                const apiResResult = await neoFetch("/api/auth/session", {
                     method: "GET",
+                    body: jsonBodyValidationResult.ret,
                 });
 
-                if (res.code === APIResCode.SUCCESS) {
-                    console.log("wow! auth success");
-                    setUser(res.data.user);
-                }
-            } catch (error) {
-                console.error("Session check failed:", error);
-                setError("Session check failed");
-            }
-
-            console.log("setLoading: false");
-            setLoading(false);
-        })();
-    }, []);
-
-    async function login(email: string, password: string) {
-        try {
-            const res = await neoFetch("/api/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email, password }),
-            });
-
-            console.log("Here!!!");
-            if (!(res.code === APIResCode.SUCCESS)) {
-                // TODO: If email needs verification, redirect to checkEmail page
-                /*
-                if (data.needsVerification) {
-                    router.push(`/checkEmail?email=${encodeURIComponent(data.email)}`);
+                if (apiResResult.err != null) {
+                    setErr("err while fetching /api/auth/session");
                     return;
                 }
-                    */
 
-                console.log("error here!...");
-                setError(res.message || "Login failed");
-                throw new Error("GENERIC_ERROR");
+                const apiRes = apiResResult.ret;
+
+                if (apiRes.statusCode !== 200) {
+                    setErr("session err:" + apiRes.body.msg);
+                    return;
+                }
+
+                setSessionPayload(apiRes.body);
+            } finally {
+                setLoading(false);
             }
-
-            setUser(res.data.user);
-        } catch (err) {
-            setError("An error occurred. Please try again.");
-            setLoading(false);
-            throw err;
-        }
-    }
+        })();
+    }, []);
+    /*
 
     async function logout() {
         try {
@@ -84,9 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             throw err;
         }
     }
+        */
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, authLoading: loading, authError: error }}>
+        <AuthContext.Provider value={{ sessionPayload, authLoading: loading, authError: err }}>
             {children}
         </AuthContext.Provider>
     );

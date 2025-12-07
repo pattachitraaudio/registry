@@ -1,7 +1,7 @@
 import { APIResCode } from "@/enums/APIResCode";
 import { iAPIErrRes, iAPISuccRes, xAPIErrRes, xAPISuccRes } from "@/types/apiResponse/xAPIRes";
 import { Flatten, ValueOf } from "@/lib/enum";
-import { Delta } from "@/lib/utils";
+import { Delta } from "@/lib/util";
 import { tElevenLabsUserRes } from "@/schemas/account/sElevenLabsUserResponse";
 
 type AccAddResCode = typeof APIResCode.Error.Account.ElevenLabs.Add;

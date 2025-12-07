@@ -601,7 +601,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle } from "lucide-react";
-import { neoFetch } from "@/neoFetch";
+import { neoFetch } from "@/lib/neoFetch";
 import { APIResCode } from "@/enums/APIResCode";
 import { sElevenLabsUserResSchema, tElevenLabsUserRes } from "@/schemas/account/sElevenLabsUserResponse";
 

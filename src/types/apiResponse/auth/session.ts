@@ -1,5 +1,5 @@
 import { xAPIErrRes, xAPISuccRes, iAPIErrRes, iAPISuccRes } from "@/types/apiResponse/xAPIRes";
-import { Delta } from "@/lib/utils";
+import { Delta } from "@/lib/util";
 import { TCode } from "@/lib/enum";
 import { APIResCode } from "@/enums/APIResCode";
 import { iUser } from "@/interfaces/iUser";

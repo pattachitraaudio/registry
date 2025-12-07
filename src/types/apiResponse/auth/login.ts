@@ -1,4 +1,4 @@
-import { Delta } from "@/lib/utils";
+import { Delta } from "@/lib/util";
 import type { iAPIErrRes, iAPISuccRes } from "@/types/apiResponse/xAPIRes";
 import { xAPIErrRes, xAPISuccRes } from "@/types/apiResponse/xAPIRes";
 import { APIResCode } from "@/enums/APIResCode";
@@ -7,6 +7,7 @@ import { APIResCode } from "@/enums/APIResCode";
 import { iUser } from "@/interfaces/iUser";
 import { ValueOf, Flatten } from "@/lib/enum";
 
+/*
 export interface IAPILoginSuccessResponse extends iAPISuccRes {
     data: { user: iUser };
 }
@@ -75,3 +76,5 @@ export class APILoginFormPasswordErrorResponse extends APILoginFormErrorResponse
         super(bodyObject);
     }
 }
+
+*/

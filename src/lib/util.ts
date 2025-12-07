@@ -13,6 +13,7 @@ export type Delta<Parent extends object, Child extends Parent> = {
         : Child[C];
 } & {};
 
+/*
 type TypeJSONString = string;
 type TypeJSONNumber = number;
 type TypeJSONBoolean = boolean;
@@ -30,10 +31,17 @@ type TypeJSONArray = (
     | TypeJSONBoolean
     | TypeJSONNull
 )[];
+*/
 
-export function cloneJSONObject(o: TypeJSONObject) {
-    const clone: TypeJSONObject = {};
+export type tJObject = {
+    [key: string]: tJObject | tJArray | number | string | boolean;
+};
 
+export type tJArray = (tJObject | tJArray | number | string | boolean)[];
+export type tJSON = tJObject | tJArray | number | string | boolean;
+
+export function cloneJSONObject(o: tJObject) {
+    const clone: tJObject = {};
     for (const entry of Object.entries(o)) {
         const [key, val] = entry;
 
@@ -49,8 +57,8 @@ export function cloneJSONObject(o: TypeJSONObject) {
     return clone;
 }
 
-export function cloneJSONArray(a: TypeJSONArray) {
-    const clone: TypeJSONArray = [];
+export function cloneJSONArray(a: tJArray) {
+    const clone: tJArray = [];
 
     a.forEach((val, index) => {
         if (Array.isArray(val)) {
@@ -65,8 +73,8 @@ export function cloneJSONArray(a: TypeJSONArray) {
     return clone;
 }
 
-export function mergeJSONObjects(a: TypeJSONObject, b: TypeJSONObject): TypeJSONObject {
-    const merged: TypeJSONObject = {};
+export function mergeJSONObjects(a: tJObject, b: tJObject): tJObject {
+    const merged: tJObject = {};
 
     for (const entry of Object.entries(a)) {
         const [key, val] = entry;
@@ -113,9 +121,12 @@ export function mergeJSONObjects(a: TypeJSONObject, b: TypeJSONObject): TypeJSON
         merged[key] = val;
     }
 
-    return merged as TypeJSONObject;
+    return merged as tJObject;
 }
 
 export type PrettifyObject<T extends object> = {
     [Key in keyof T]: T[Key] extends object ? PrettifyObject<T[Key]> : T[Key];
 } & {};
+
+declare const brand: unique symbol;
+export type Brand<T, Brand extends string> = T & { [brand]: Brand };

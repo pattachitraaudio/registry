@@ -5,77 +5,108 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { neoFetch } from "@/neoFetch";
-import { APIResCode } from "@/enums/APIResCode";
+import { neoFetch } from "@/lib/neoFetch";
+import { validateVerifyEmailReqBodyJSON } from "../api/auth/verifyEmail/validate";
+import { ValueOf } from "@/lib/enum";
+
+const STATUS = {
+    LOADING: { val: 0, msg: "Verifying your email address..." },
+    SUCCESS: { val: 1, msg: "Your email has been verified!" },
+    ERROR: { val: 2, msg: "Verification failed" },
+    TOKEN_NOT_PRESENT: { val: 3, msg: "Invalid verification link" },
+} as const;
 
 function VerifyEmailContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const token = searchParams.get("token");
+    const vfToken = searchParams.get("vfToken");
 
-    const [status, setStatus] = useState<"loading" | "success" | "error" | "no-token">("loading");
-    const [message, setMessage] = useState("");
+    const [status, setStatus] = useState<ValueOf<typeof STATUS>>(STATUS.LOADING);
+    const [err, setErr] = useState("");
 
     useEffect(() => {
-        if (!token) {
-            setStatus("no-token");
-            setMessage("No verification token provided");
+        if (!vfToken) {
+            setStatus(STATUS.TOKEN_NOT_PRESENT);
+            setErr("No verification token provided");
             return;
         }
 
-        const verifyEmail = async () => {
+        async function handleVerifyEmail() {
+            if (vfToken == null) {
+                return;
+            }
+
             try {
-                const res = await neoFetch("/api/auth/verifyEmail", {
+                const jsonBody = { vfToken };
+                const jsonBodyValidationResult = await validateVerifyEmailReqBodyJSON(jsonBody);
+
+                if (jsonBodyValidationResult.err != null) {
+                    setStatus(STATUS.ERROR);
+                    setErr("Invalid 'vfToken'");
+                    return;
+                }
+
+                const apiResResult = await neoFetch("/api/auth/verifyEmail", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ vfToken: token }),
+                    body: jsonBodyValidationResult.ret,
                 });
 
-                if (res.code === APIResCode.SUCCESS) {
-                    setStatus("success");
-                    setMessage(res.message);
-                    setTimeout(() => {
-                        router.push("/login");
-                    }, 3000);
-                } else {
-                    setStatus("error");
-                    setMessage(res.message || "Verification failed");
+                if (apiResResult.err != null) {
+                    setErr("Err fetching /api/auth/verifyEmail");
+                    setStatus(STATUS.ERROR);
+                    return;
                 }
-            } catch {
-                setStatus("error");
-                setMessage("An error occurred during verification");
-            }
-        };
 
-        verifyEmail();
-    }, [token, router]);
+                const apiRes = apiResResult.ret;
+
+                if (apiRes.statusCode !== 200) {
+                    const err = apiRes.body;
+                    setErr("API err: " + err.message);
+                    setStatus(STATUS.ERROR);
+                    return;
+                }
+
+                router.push("/login");
+            } catch {
+                setErr("Verification failed");
+            } finally {
+            }
+        }
+
+        handleVerifyEmail();
+    }, [vfToken, router]);
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-background-50 p-4">
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle className="text-2xl text-center">Email Verification</CardTitle>
-                    <CardDescription className="text-center">
-                        {status === "loading" && "Verifying your email address..."}
-                        {status === "success" && "Your email has been verified!"}
-                        {status === "error" && "Verification failed"}
-                        {status === "no-token" && "Invalid verification link"}
-                    </CardDescription>
+                    <CardDescription className="text-center">{status.msg}</CardDescription>
                 </CardHeader>
+
                 <CardContent className="flex flex-col items-center space-y-4 py-8">
-                    {status === "loading" && <Loader2 className="h-16 w-16 animate-spin text-neutral-500" />}
-                    {status === "success" && <CheckCircle className="h-16 w-16 text-green-600" />}
-                    {(status === "error" || status === "no-token") && <XCircle className="h-16 w-16 text-red-600" />}
-                    <p className="text-center text-sm text-neutral-600">{message}</p>
-                    {status === "success" && (
+                    {STATUS.LOADING === status && <Loader2 className="h-16 w-16 animate-spin text-neutral-500" />}
+                    {STATUS.SUCCESS === status && (
+                        <>
+                            <CheckCircle className="h-16 w-16 text-green-600" />
+                        </>
+                    )}
+                    {(status === STATUS.TOKEN_NOT_PRESENT || status === STATUS.ERROR) && (
+                        <XCircle className="h-16 w-16 text-red-600" />
+                    )}
+
+                    <p className="text-center text-sm text-neutral-600">{err}</p>
+                    {STATUS.SUCCESS == status && (
                         <p className="text-center text-sm text-neutral-500">Redirecting to login...</p>
                     )}
                 </CardContent>
+
                 <CardFooter className="flex justify-center">
-                    {status === "success" && <Button onClick={() => router.push("/login")}>Go to Login</Button>}
-                    {(status === "error" || status === "no-token") && (
+                    {STATUS.SUCCESS === status && <Button onClick={() => router.push("/login")}>Go to Login</Button>}
+                    {(STATUS.TOKEN_NOT_PRESENT === status || STATUS.ERROR === status) && (
                         <Button variant="default" onClick={() => router.push("/signUp")}>
                             Back to Sign Up
                         </Button>

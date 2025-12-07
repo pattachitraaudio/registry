@@ -1,171 +1,78 @@
-import bcrypt from "bcryptjs";
+// import bcrypt from "bcryptjs";
 
 import { APIResCode } from "@/enums/APIResCode";
-import { xAPIErrRes } from "@/types/apiResponse/xAPIRes";
+import { bLoginReq, validateLoginReqBodyJSON } from "./validate";
+import { xNextRes } from "@/lib/xNextRes";
+import { createRoute } from "@/lib/createRoute";
+import { sessionPromise } from "@/lib/session";
+import { xNoThrowFn } from "@/lib/xNoThrow";
+import { mUser, mUserPromise } from "@/repo/mUser";
+import { mEmailVfTokenPromise } from "@/repo/mEmailVfToken";
+import { createAndInsertEmailVfToken } from "../signUp/route";
+import { emailPromise } from "@/lib/email";
+import { comparePasswordHash } from "@/lib/crypto/password";
+import { sendVerificationEmail } from "../resendVfEmail/route";
 
-import {
-    APILoginErrorResponse,
-    APILoginFormEmailErrorResponse,
-    APILoginFormPasswordErrorResponse,
-    APILoginSuccessResponse,
-} from "@/types/apiResponse/auth/login";
+const postHandler = async function (req: bLoginReq) {
+    // try {
+    const CODE = APIResCode.Error.Login;
+    const { email, password } = req;
 
-import { ServiceManager } from "@/classes/xServiceManager";
-import { mUser } from "@/lib/db/models/mUser";
-import { NextRequest, NextResponse } from "next/server";
+    const mUserResult = await mUserPromise;
 
-function validateEmail(body: object): { email: string } {
-    const Code = APIResCode.Error.Login.Form.Email;
-
-    if (!("email" in body)) {
-        throw new APILoginFormEmailErrorResponse({ code: Code.EMAIL_NOT_PRESENT, message: "Email not present" });
+    if (mUserResult.err != null) {
+        /*
+        return xNoThrowFn.err(
+            xNextRes.new({ statusCode: 500, body: { errCode: APIResCode.Error.DB_CONNECTION_FAILED } }),
+        );
+        */
+        return xNoThrowFn.err(xNextRes.newErr({ statusCode: 500, errCode: APIResCode.Error.DB_CONNECTION_FAILED })); // This one uses the new convention!
     }
 
-    const email = body.email;
+    const mUser = mUserResult.ret;
+    const userResult = await mUser.findOne({ email });
 
-    if (typeof email !== "string") {
-        throw new APILoginFormEmailErrorResponse({ code: Code.EMAIL_NOT_A_STRING, message: "Email must be a string" });
+    if (userResult.err != null) {
+        return xNoThrowFn.err(xNextRes.newErr({ statusCode: 500, errCode: APIResCode.Error.DB_ERROR }));
     }
 
-    if (!email.match(/^[a-z0-9]+@/)) {
-        throw new APILoginFormEmailErrorResponse({
-            code: Code.INVALID_USERNAME,
-            message:
-                "Email username must contain only letters and numbers (no dots, underscores, or special characters)",
-        });
-    }
+    const user = userResult.ret;
 
-    if (!email.match(/@[a-z0-9]+\./)) {
-        throw new APILoginFormEmailErrorResponse({
-            code: Code.INVALID_DOMAIN_NAME,
-            message: "Email domain must contain only letters and numbers (no underscores or special characters)",
-        });
-    }
-
-    if (!email.match(/^[^.]*@[^.]*\.[^.]*$/)) {
-        throw new APILoginFormEmailErrorResponse({
-            code: Code.INVALID_DOMAIN_NAME,
-            message: "Email must not contain subdomains (format: username@domain.tld)",
-        });
-    }
-
-    if (!email.match(/^[a-z0-9]+@[a-z0-9]+\.[a-z]{2,}$/)) {
-        throw new APILoginFormEmailErrorResponse({
-            code: Code.FAILED_TO_VALIDATE_EMAIL,
-            message: "Invalid email address",
-        });
-    }
-
-    return { email };
-}
-
-function validatePassword(body: object): { password: string } {
-    const Code = APIResCode.Error.Login.Form.Password;
-
-    if (!("password" in body)) {
-        throw new APILoginFormPasswordErrorResponse({
-            code: Code.PASSWORD_NOT_PRESENT,
-            message: "Password is required",
-        });
-    }
-
-    const password = body.password;
-
-    if (typeof password !== "string") {
-        throw new APILoginFormPasswordErrorResponse({
-            code: Code.PASSWORD_NOT_A_STRING,
-            message: "Password must be a string",
-        });
-    }
-
-    if (password.length < 8) {
-        throw new APILoginFormPasswordErrorResponse({
-            code: Code.PASSWORD_TOO_SHORT,
-            message: "Password must be at least 8 characters",
-        });
-    }
-
-    if (password.length > 64) {
-        throw new APILoginFormPasswordErrorResponse({
-            code: Code.PASSWORD_TOO_LONG,
-            message: "Password must not exceed 64 characters",
-        });
-    }
-
-    if (!/[A-Z]/.test(password)) {
-        throw new APILoginFormPasswordErrorResponse({
-            code: Code.PASSWORD_MISSING_UPPERCASE,
-            message: "Password must contain at least one uppercase letter",
-        });
-    }
-
-    if (!/[a-z]/.test(password)) {
-        throw new APILoginFormPasswordErrorResponse({
-            code: Code.PASSWORD_MISSING_LOWERCASE,
-            message: "Password must contain at least one lowercase letter",
-        });
-    }
-
-    if (!/[0-9]/.test(password)) {
-        throw new APILoginFormPasswordErrorResponse({
-            code: Code.PASSWORD_MISSING_NUMBER,
-            message: "Password must contain at least one number",
-        });
-    }
-
-    if (!/[^A-Za-z0-9]/.test(password)) {
-        throw new APILoginFormPasswordErrorResponse({
-            code: Code.PASSWORD_MISSING_SPECIAL_CHARACTER,
-            message: "Password must contain at least one special character",
-        });
-    }
-
-    return { password };
-}
-
-// export type PostLoginRouteHandlerReturnType = IAPILoginSuccessResponse | IAPILoginErrorResponse | iAPIErrRes;
-
-export async function POST(
-    request: NextRequest,
-): Promise<APILoginSuccessResponse | APILoginErrorResponse | xAPIErrRes> {
-    try {
-        const body = await request.json();
-
-        const { email } = validateEmail(body);
-        const { password } = validatePassword(body);
-
-        const userCollection = (await new ServiceManager().setup()).mongoDBClient
-            .db("registry")
-            .collection<mUser>("users");
-        const user = await userCollection.findOne({ email: email });
-
-        if (!user) {
+    if (!user) {
+        /*
             throw new APILoginErrorResponse(401, {
                 code: APIResCode.Error.Login.EMAIL_NOT_FOUND,
                 message: `No user with email \`${email}\` found`,
             });
-        }
+            */
+        return xNoThrowFn.ret(xNextRes.newErr({ statusCode: 401, errCode: CODE.EMAIL_NOT_FOUND }));
+    }
 
-        const isValidPass = await bcrypt.compare(password, user.password);
+    // const isValidPass = await bcrypt.compare(password, user.password);
+    console.log("password:", password, "hashedPassword:", user.hashedPassword);
+    const isValidPass = (await comparePasswordHash(password, user.hashedPassword)).ret;
 
-        if (!isValidPass) {
+    if (!isValidPass) {
+        /*
             throw new APILoginErrorResponse(401, {
                 code: APIResCode.Error.Login.INCORRECT_PASSWORD,
                 message: "Incorrect password",
             });
-        }
+            */
+        return xNoThrowFn.ret(xNextRes.newErr({ statusCode: 401, errCode: CODE.INCORRECT_PASSWORD }));
+    }
 
-        // Check if email is verified
-        if (!user.isVerified) {
-            throw new APILoginErrorResponse(403, {
-                code: APIResCode.Error.Login.EMAIL_NOT_VERIFIED,
-                message: "Verify your email before logging in",
-            });
-        }
+    // Check if email is verified
+    if (!user.isVerified) {
+        sendVerificationEmail(user);
+        return xNoThrowFn.ret(xNextRes.newErr({ statusCode: 403, errCode: CODE.EMAIL_NOT_VERIFIED }));
+    }
 
-        const cookieManager = (await new ServiceManager().setup()).cookieManager;
-        const cookie = await cookieManager.create(user);
+    // const cookieManager = (await new ServiceManager().setup()).cookieManager;
+    // const cookie = await cookieManager.create(user);
+    // const cookie = (await cookiePromise).create()
 
+    /*
         return new APILoginSuccessResponse([["Set-Cookie", cookie]], {
             data: {
                 user: {
@@ -175,6 +82,22 @@ export async function POST(
             },
             message: "Logged in successfully",
         });
+        */
+    const cookie = await (await sessionPromise).ret.create(user);
+
+    return xNoThrowFn.ret(
+        xNextRes.new({
+            statusCode: 200,
+            headers: [["Set-Cookie", cookie]],
+            body: {
+                user: {
+                    email: user.email,
+                    name: user.name,
+                },
+            },
+        }),
+    );
+    /*
     } catch (err) {
         if (err instanceof xAPIErrRes) {
             return err;
@@ -186,4 +109,12 @@ export async function POST(
                 "Whoa, server has encountered an unknown error. If you see this message, please report to the administrator",
         });
     }
-}
+        */
+};
+// Note: Don't use the satisfies keyword. It widens types in this case!
+//  satisfies tHandlerFn<bLoginReq>;
+
+export const POST = createRoute({
+    handlerFn: postHandler,
+    reqBodyJSONValidatorFn: validateLoginReqBodyJSON,
+});

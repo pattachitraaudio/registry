@@ -5,6 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Loader2 } from "lucide-react";
+import { neoFetch } from "@/lib/neoFetch";
+import { validateEmail } from "@/brands/email";
+import { validateResendVfEmailReqBodyJSON } from "../api/auth/resendVfEmail/validate";
 
 /*
 export default function CheckEmailPage() {
@@ -96,34 +99,55 @@ export default function CheckEmailPage() {
 function CheckEmailContent() {
     const searchParams = useSearchParams();
     const email = searchParams.get("email");
-    const [loading, setLoading] = useState(false);
+
+    const [loading, setLoading] = useState<boolean>(false);
     const [message, setMessage] = useState("");
-    const [error, setError] = useState("");
 
     const handleResend = async () => {
-        if (!email) return;
+        if (!email) {
+            setMessage("Email not found in query parameters");
+            return;
+        }
+
         setLoading(true);
         setMessage("");
-        setError("");
 
         try {
-            const response = await fetch("/api/auth/resendVerificationEmail", {
+            const jsonBody = { email };
+            const jsonBodyValidationResult = await validateResendVfEmailReqBodyJSON(jsonBody);
+
+            if (jsonBodyValidationResult.err != null) {
+                setMessage("Invalid email");
+                return;
+            }
+
+            const apiResResult = await neoFetch("/api/auth/resendVfEmail", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ email }),
+                body: jsonBodyValidationResult.ret,
             });
 
-            const data = await response.json();
-
-            if (response.ok) {
-                setMessage("Verification email sent successfully!");
-            } else {
-                setError(data.error || "Failed to resend email");
+            if (apiResResult.err != null) {
+                setMessage("Failed to fetch /api/auth/resendVfEmail");
+                return;
             }
-        } catch (err) {
-            setError("An error occurred. Please try again.");
+
+            const apiRes = apiResResult.ret;
+            // const data = await .json();
+
+            if (apiRes.statusCode !== 200) {
+                // apiRes.body;
+                console.error(apiRes.body.errCode + ": " + apiRes.body.phrase);
+                setMessage(apiRes.body.message);
+
+                return;
+            }
+
+            setMessage("Verification email sent successfully");
+            // } catch (err) {
+            // setError("An error occurred. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -148,7 +172,6 @@ function CheckEmailContent() {
                         <p>Click the link in the email to verify your account. The link will expire in 24 hours.</p>
                     </div>
                     {message && <div className="rounded-md bg-green-50 p-3 text-sm text-green-800">{message}</div>}
-                    {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
                     <div className="text-center text-sm text-muted-foreground">
                         <p>Didn&apos;t receive the email?</p>
                         <p>Check your spam folder or request a new one.</p>
@@ -198,3 +221,5 @@ export default function CheckEmailPage() {
         </Suspense>
     );
 }
+
+// {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}

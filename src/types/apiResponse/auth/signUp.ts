@@ -1,4 +1,4 @@
-import { Delta } from "@/lib/utils";
+import { Delta } from "@/lib/util";
 import { APIResCode } from "@/enums/APIResCode";
 import type { iAPIErrRes, iAPISuccRes } from "@/types/apiResponse/xAPIRes";
 import { xAPIErrRes, xAPISuccRes } from "@/types/apiResponse/xAPIRes";

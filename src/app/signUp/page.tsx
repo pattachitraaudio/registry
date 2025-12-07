@@ -18,18 +18,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/contexts/AuthContext";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import Script from "next/script";
-import { IAPISignUpErrorResponse, IAPISignUpSuccessResponse } from "@/types/apiResponse/auth/signUp";
-import { APIResCode } from "@/enums/APIResCode";
-import { neoFetch } from "@/neoFetch";
+import { neoFetch } from "@/lib/neoFetch";
+import { validateSignUpReqBodyJSON } from "../api/auth/signUp/validate";
+import { checkEmailURL } from "../checkEmailURL";
+
+/*
+interface iSignUpForm {
+    name: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    referralCode: string;
+
+    // state:
+}
+    */
 
 export default function SignUpPage() {
     const router = useRouter();
-    const { user, authLoading } = useAuth();
+    const { sessionPayload, authLoading } = useAuth();
+
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [referralCode, setReferralCode] = useState("");
+
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [formSubmissionState, setFormSubmissionState] = useState<true | false>(false);
@@ -38,10 +52,10 @@ export default function SignUpPage() {
 
     useEffect(() => {
         // Redirect if already logged in
-        if (!authLoading && user) {
+        if (!authLoading && sessionPayload != null) {
             router.push("/");
         }
-    }, [user, authLoading, router]);
+    }, [sessionPayload, authLoading, router]);
 
     // Expose turnstile functions
     useEffect(() => {
@@ -50,10 +64,10 @@ export default function SignUpPage() {
             setCaptchaRes(token);
         };
         window.cloudflareTurnstileOnErrorCallback = function () {
-            console.log("turnstileError");
+            console.error("turnstile err");
         };
         window.cloudflareTurnstileOnExpiredCallback = function () {
-            console.log("turnstileExpired");
+            console.error("turnstile expired");
         };
 
         return () => {
@@ -62,6 +76,10 @@ export default function SignUpPage() {
             delete window.cloudflareTurnstileOnExpiredCallback;
         };
     });
+
+    async function handleFormValidationErr(errCode: number) {
+        console.error("form validation errCode:", errCode);
+    }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -80,49 +98,50 @@ export default function SignUpPage() {
         setLoading(true);
 
         try {
-            /*
-            const res = await fetch("/api/auth/signUp", {
+            const jsonBody = { name, email, password, referralCode, captchaRes };
+            const jsonBodyValidationResult = await validateSignUpReqBodyJSON(jsonBody);
+
+            if (jsonBodyValidationResult.err != null) {
+                handleFormValidationErr(jsonBodyValidationResult.err);
+                return;
+            }
+
+            const apiResResult = await neoFetch("/api/auth/signUp", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ name, email, password, referralCode, captchaRes }),
+                body: jsonBodyValidationResult.ret,
             });
 
-            const resObj = (await res.json()) as IAPISignUpErrorResponse | IAPISignUpSuccessResponse;
-            */
-            const res = await neoFetch("/api/auth/signUp", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ name, email, password, referralCode, captchaRes }),
-            });
+            if (apiResResult.err != null) {
+                console.error("apiRes error: ", apiResResult.err);
+                setError("failed to fetch /api/auth/signUp");
+                return;
+            }
 
-            if (res.code !== APIResCode.SUCCESS) {
+            const apiRes = apiResResult.ret;
+
+            if (apiRes.statusCode !== 201) {
+                // const err = apiRes.body;
                 if (turnstileRef.current) {
                     window.turnstile.reset(turnstileRef.current);
                 }
+                console.error("api response err");
+
+                // setError(apiRes.body)
+                return;
             }
 
-            console.log(res);
-            if (res.code === APIResCode.SUCCESS) {
-                // Redirect to check email page
-                // console.log("yes!");
-                router.push(`/checkEmail?email=${encodeURIComponent(res.data.user.email)}`);
-            } else {
-                // console.log("gadha is here");
-                setError(res.message);
-            }
-        } catch {
-            setError("An error has occurred");
+            router.push(checkEmailURL(email));
         } finally {
             setLoading(false);
         }
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <main className="flex flex-col min-h-screen items-center justify-center bg-background p-8">
+            <h1 className="mb-10 text-[2rem] text-center">Pattachitra registry</h1>
             <Card className="w-120">
                 <CardHeader>
                     <CardTitle className="text-center text-2xl mb-4">Sign up</CardTitle>
@@ -148,7 +167,7 @@ export default function SignUpPage() {
                                 <Input
                                     id="email"
                                     type="email"
-                                    placeholder="m@example.com"
+                                    placeholder="romeo@pattachitra.com"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -183,10 +202,10 @@ export default function SignUpPage() {
                             <Field>
                                 <FieldLabel htmlFor="referralCode">Referral code</FieldLabel>
                                 <Input
-                                    id="confirmPassword"
+                                    id="referralCode"
                                     type="text"
                                     required
-                                    placeholder="REF12345"
+                                    placeholder="REF0123456789ABCDEF0123456789ABCDEF"
                                     value={referralCode}
                                     onChange={(e) => setReferralCode(e.target.value)}
                                 />
@@ -219,6 +238,6 @@ export default function SignUpPage() {
                 </CardContent>
             </Card>
             <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></Script>
-        </div>
+        </main>
     );
 }

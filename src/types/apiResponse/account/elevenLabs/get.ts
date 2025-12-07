@@ -1,4 +1,4 @@
-import { Delta } from "@/lib/utils";
+import { Delta } from "@/lib/util";
 import { iAPIErrRes, iAPISuccRes, xAPIErrRes, xAPISuccRes } from "../../xAPIRes";
 
 export interface iAPIAccGetElevenLabsErrRes extends iAPIErrRes {}

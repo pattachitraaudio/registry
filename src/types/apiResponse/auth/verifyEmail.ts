@@ -1,4 +1,4 @@
-import { Delta } from "@/lib/utils";
+import { Delta } from "@/lib/util";
 import { ValueOf, Flatten } from "@/lib/enum";
 
 import { APIResCode } from "@/enums/APIResCode";
