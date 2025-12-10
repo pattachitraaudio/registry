@@ -6,6 +6,47 @@ import { bName } from "@/brands/name";
 import { bReferralCode } from "@/brands/referralCode";
 import { bHashedPassword } from "@/lib/crypto/password";
 
+/*
+const userJSONSchema = {
+    bsonType: "object",
+    required: [
+        "_id",
+        "email",
+        "hashedPassword",
+        "name",
+        "isVerified",
+        "createdAt",
+        "referredBy",
+        "referralCode",
+        "permissions",
+    ],
+    properties: {
+        _id: {
+            bsonType: "objectId",
+        },
+        email: {
+            bsonType: "string",
+        },
+        hashedPassword: {
+            bsonType: "string",
+        },
+        name: {
+            bsonType: "string",
+        },
+        isVerified: {
+            bsonType: "bool",
+        },
+        createdAt: {
+            bsonType: "date",
+        },
+        referredBy: {
+            bsonType: "objectId",
+        },
+        referralCode: {},
+    },
+};
+*/
+
 export interface mUser {
     _id: ObjectId;
     email: bEmail;

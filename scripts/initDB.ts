@@ -1,13 +1,14 @@
 import fs from "fs";
+import z, { email } from "zod";
 import dotenv from "dotenv";
-import { FileQuestionMark } from "lucide-react";
-
 /*
 dotenv.config({
     path: ".env.local",
 });
 */
-// import { MongoClient } from "mongodb";
+import { Db, MongoClient } from "mongodb";
+import { url } from "inspector";
+import { JSONSchema } from "zod/v4/core";
 
 function configureEnvVariables() {
     const files = fs.readdirSync(".");
@@ -60,36 +61,83 @@ function configureEnvVariables() {
     });
 
     const envTypes = [
-        ["local", "dev", "development"],
-        ["sandbox", "sbx"],
-        ["test", "testing"],
-        ["integration", "int"],
-        ["qa", "quality-assurance"],
-        ["perf", "performance"],
-        ["uat", "user-acceptance-testing"],
-        ["demo", "demonstration"],
-        ["preview", "pre"],
-        ["alpha"],
-        ["beta"],
-        ["stg", "stage", "staging"],
-        ["canary", "cny"],
-        ["hotfix", "hfx"],
-        ["training", "trn"],
-        ["dr", "disaster-recovery"],
-        ["prod", "production"],
-        [""],
+        { type: "local/development", tokens: ["", "local", "dev", "development"] },
+        { type: "sandbox", tokens: ["sandbox", "sbx"] },
+        { type: "test", tokens: ["test", "testing"] },
+        { type: "integration", tokens: ["integration", "int"] },
+        { type: "qa", tokens: ["qa", "quality-assurance"] },
+        { type: "performance", tokens: ["perf", "performance"] },
+        { type: "user-acceptance-testing", tokens: ["uat", "user-acceptance-testing"] },
+        { type: "demo", tokens: ["demo", "demonstration"] },
+        { type: "preview", tokens: ["preview", "pre"] },
+        { type: "alpha", tokens: ["alpha"] },
+        { type: "beta", tokens: ["beta"] },
+        { type: "staging", tokens: ["stg", "stage", "staging"] },
+        { type: "canary", tokens: ["canary", "cny"] },
+        { type: "hotfix", tokens: ["hotfix", "hfx"] },
+        { type: "training", tokens: ["training", "trn"] },
+        { type: "disaster-recovery", tokens: ["dr", "disaster-recovery"] },
+        { type: "production", tokens: ["prod", "production"] },
     ];
 
-    const foundEnvTypes: string[] = [];
+    // const foundEnvTypes: string[] = [];
 
-    for (let i = 0; i < envTypes.length; i++) {
-        for (let j = 0; j < envTypes[i].length; j++) {
-            for (const token of fileTokens) {
-                if (token === envTypes[i][j]) {
+    const foundEnvTypes = fileTokens
+        .map(({ fileName, tokens }) => {
+            let envIndex = -1;
+
+            for (let i = 0; i < envTypes.length; i++) {
+                for (let j = 0; j < envTypes[i].tokens.length; j++) {
+                    for (const token of tokens) {
+                        if (token === envTypes[i].tokens[j]) {
+                            envIndex = i;
+                        }
+                    }
                 }
             }
-        }
-    }
+
+            if (envIndex == -1) {
+                return;
+            }
+
+            return { fileName, envIndex };
+        })
+        .filter((val) => val != null)
+        .sort((a, b) => a.envIndex - b.envIndex);
+
+    foundEnvTypes.forEach(({ fileName, envIndex }, index) => {
+        console.log(`${index}) Env file: '${fileName}', type: '${envTypes[envIndex].type}'`);
+    });
+
+    const chosenEnvType = foundEnvTypes[0];
+    console.log(`Continuing with file '${chosenEnvType.fileName}'`);
+
+    dotenv.config({ path: `${chosenEnvType.fileName}`, quiet: true });
 }
 
-configureEnvVariables();
+(function init() {
+    configureEnvVariables();
+    const envSchema = z.object({
+        MONGODB_URI: z.url({ protocol: /(mongodb)|(mongodb+srv)/ }),
+    });
+
+    const env = envSchema.parse(process.env);
+    (async function () {
+        const client = await MongoClient.connect(env.MONGODB_URI);
+
+        const registryDB: Db = client.db("registry");
+
+        const userIndexes = await registryDB
+            .collection("users")
+            .createIndexes([{ key: { email: 1 }, unique: true, name: "email" }]);
+        console.log("mUserCollection indexNames:", userIndexes.join(", "));
+
+        const emailVfTokenIndexes = await registryDB.collection("emailVfTokens").createIndexes([
+            { key: { userID: 1 }, unique: true, name: "userID" },
+            { key: { email: 1 }, unique: true, name: "email" },
+        ]);
+        console.log("mEmailVfToken indexNames:", emailVfTokenIndexes.join(", "));
+
+        await client.close();
+    })();
+})();
